@@ -26,8 +26,8 @@ export default function SignupScreen({ navigation }: any) {
       <Text variant="headlineMedium" style={{ marginBottom: 8 }}>Create your account</Text>
       <TextField control={control} name="email" label="Email" />
       <TextField control={control} name="password" label="Password" secureTextEntry />
-      <PrimaryButton label="Sign Up" onPress={handleSubmit(onSubmit)}>Sign Up</PrimaryButton>
-      <PrimaryButton label="Back to Login" mode="text" onPress={() => navigation.goBack()}>Back to Login</PrimaryButton>
+      <PrimaryButton label="Sign Up" onPress={handleSubmit(onSubmit)} />
+      <PrimaryButton label="Back to Login" mode="text" onPress={() => navigation.goBack()} />
     </View>
   );
 }

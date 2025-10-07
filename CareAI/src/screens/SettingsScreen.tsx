@@ -18,7 +18,7 @@ return (
 <Text>Data privacy consent</Text>
 <Switch value={consent} onValueChange={setConsent} />
 </View>
-<PrimaryButton label="Log out" onPress={logout}>Log out</PrimaryButton>
+<PrimaryButton label="Log out" onPress={logout} />
 </View>
 );
 }

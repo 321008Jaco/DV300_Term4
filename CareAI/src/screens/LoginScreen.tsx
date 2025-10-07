@@ -30,8 +30,8 @@ return (
 <Text variant="headlineMedium" style={{ marginBottom: 8 }}>Welcome back</Text>
 <TextField control={control} name="email" label="Email" />
 <TextField control={control} name="password" label="Password" secureTextEntry />
-<PrimaryButton label="Log In" onPress={handleSubmit(onSubmit)}>{'Log In'}</PrimaryButton>
-<PrimaryButton label="Create Account" mode="text" onPress={() => navigation.navigate('Signup')}>{'Create Account'}</PrimaryButton>
+<PrimaryButton label="Log In" onPress={handleSubmit(onSubmit)} />
+<PrimaryButton label="Create Account" mode="text" onPress={() => navigation.navigate('Signup')} />
 </View>
 );
 }

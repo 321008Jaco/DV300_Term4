@@ -35,9 +35,7 @@ return (
 <TextField control={control} name="age" label="Age" />
 <TextField control={control} name="sex" label="Sex (male/female/other)" />
 <TextField control={control} name="complaint" label="Main complaint" />
-<PrimaryButton label="Check" onPress={handleSubmit(onSubmit)}>
-  Check
-</PrimaryButton>
+<PrimaryButton label="Check" onPress={handleSubmit(onSubmit)} />
 <Text style={{ marginTop: 8, opacity: 0.7 }}>
 Disclaimer: This app provides information only and is not a medical diagnosis.
 </Text>
