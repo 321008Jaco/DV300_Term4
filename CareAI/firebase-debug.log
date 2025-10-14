@@ -1,0 +1,53 @@
+[debug] [2025-10-14T00:02:27.052Z] ----------------------------------------------------------------------
+[debug] [2025-10-14T00:02:27.054Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\Jakes\AppData\Local\npm-cache\_npx\ba4f1959e38407b5\node_modules\firebase-tools\lib\bin\firebase.js functions:secrets:set OPENAI_API_KEY
+[debug] [2025-10-14T00:02:27.054Z] CLI Version:   14.19.1
+[debug] [2025-10-14T00:02:27.054Z] Platform:      win32
+[debug] [2025-10-14T00:02:27.054Z] Node Version:  v21.6.2
+[debug] [2025-10-14T00:02:27.055Z] Time:          Tue Oct 14 2025 02:02:27 GMT+0200 (South Africa Standard Time)
+[debug] [2025-10-14T00:02:27.055Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-10-14T00:02:27.198Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-10-14T00:02:27.198Z] > authorizing via signed-in user (231008@virtualwindow.co.za)
+[debug] [2025-10-14T00:02:27.200Z] Checked if tokens are valid: false, expires at: 1760398107752
+[debug] [2025-10-14T00:02:27.200Z] Checked if tokens are valid: false, expires at: 1760398107752
+[debug] [2025-10-14T00:02:27.200Z] > refreshing access token with scopes: []
+[debug] [2025-10-14T00:02:27.203Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-14T00:02:27.203Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-14T00:02:27.658Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-14T00:02:27.658Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-14T00:02:27.668Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/careai-d0274/services/secretmanager.googleapis.com [none]
+[debug] [2025-10-14T00:02:27.669Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/careai-d0274/services/secretmanager.googleapis.com x-goog-quota-user=projects/careai-d0274
+[debug] [2025-10-14T00:02:29.665Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/careai-d0274/services/secretmanager.googleapis.com 200
+[debug] [2025-10-14T00:02:29.665Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/careai-d0274/services/secretmanager.googleapis.com [omitted]
+[debug] [2025-10-14T00:02:29.665Z] Checked if tokens are valid: true, expires at: 1760403746658
+[debug] [2025-10-14T00:02:29.665Z] Checked if tokens are valid: true, expires at: 1760403746658
+[debug] [2025-10-14T00:02:29.666Z] >>> [apiv2][query] POST https://serviceusage.googleapis.com/v1/projects/careai-d0274/services/secretmanager.googleapis.com:enable [none]
+[debug] [2025-10-14T00:02:29.666Z] >>> [apiv2][(partial)header] POST https://serviceusage.googleapis.com/v1/projects/careai-d0274/services/secretmanager.googleapis.com:enable x-goog-quota-user=projects/careai-d0274
+[debug] [2025-10-14T00:02:30.525Z] <<< [apiv2][status] POST https://serviceusage.googleapis.com/v1/projects/careai-d0274/services/secretmanager.googleapis.com:enable 200
+[debug] [2025-10-14T00:02:30.525Z] <<< [apiv2][body] POST https://serviceusage.googleapis.com/v1/projects/careai-d0274/services/secretmanager.googleapis.com:enable [omitted]
+[debug] [2025-10-14T00:02:40.548Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-10-14T00:02:40.548Z] > authorizing via signed-in user (231008@virtualwindow.co.za)
+[debug] [2025-10-14T00:02:40.548Z] [iam] checking project careai-d0274 for permissions ["firebase.projects.get","secretmanager.secrets.create","secretmanager.secrets.get","secretmanager.secrets.update","secretmanager.versions.add"]
+[debug] [2025-10-14T00:02:40.549Z] Checked if tokens are valid: true, expires at: 1760403746658
+[debug] [2025-10-14T00:02:40.549Z] Checked if tokens are valid: true, expires at: 1760403746658
+[debug] [2025-10-14T00:02:40.549Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/careai-d0274:testIamPermissions [none]
+[debug] [2025-10-14T00:02:40.549Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/careai-d0274:testIamPermissions x-goog-quota-user=projects/careai-d0274
+[debug] [2025-10-14T00:02:40.549Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/careai-d0274:testIamPermissions {"permissions":["firebase.projects.get","secretmanager.secrets.create","secretmanager.secrets.get","secretmanager.secrets.update","secretmanager.versions.add"]}
+[debug] [2025-10-14T00:02:42.376Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/careai-d0274:testIamPermissions 200
+[debug] [2025-10-14T00:02:42.376Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/careai-d0274:testIamPermissions {"permissions":["firebase.projects.get","secretmanager.secrets.create","secretmanager.secrets.get","secretmanager.secrets.update","secretmanager.versions.add"]}
+[debug] [2025-10-14T00:02:42.377Z] Checked if tokens are valid: true, expires at: 1760403746658
+[debug] [2025-10-14T00:02:42.377Z] Checked if tokens are valid: true, expires at: 1760403746658
+[debug] [2025-10-14T00:02:42.377Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/careai-d0274 [none]
+[debug] [2025-10-14T00:02:42.708Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/careai-d0274 200
+[debug] [2025-10-14T00:02:42.708Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/careai-d0274 {"projectNumber":"65669784085","projectId":"careai-d0274","lifecycleState":"ACTIVE","name":"CareAI","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2025-10-07T17:18:10.202477Z","parent":{"type":"organization","id":"302473745500"}}
+[debug] [2025-10-14T00:02:42.708Z] Checked if tokens are valid: true, expires at: 1760403746658
+[debug] [2025-10-14T00:02:42.708Z] Checked if tokens are valid: true, expires at: 1760403746658
+[debug] [2025-10-14T00:02:42.708Z] >>> [apiv2][query] GET https://secretmanager.googleapis.com/v1/projects/careai-d0274/secrets/OPENAI_API_KEY [none]
+[debug] [2025-10-14T00:02:44.161Z] <<< [apiv2][status] GET https://secretmanager.googleapis.com/v1/projects/careai-d0274/secrets/OPENAI_API_KEY 404
+[debug] [2025-10-14T00:02:44.161Z] <<< [apiv2][body] GET https://secretmanager.googleapis.com/v1/projects/careai-d0274/secrets/OPENAI_API_KEY {"error":{"code":404,"message":"Secret [projects/65669784085/secrets/OPENAI_API_KEY] not found.","status":"NOT_FOUND"}}
+[debug] [2025-10-14T00:02:44.162Z] Checked if tokens are valid: true, expires at: 1760403746658
+[debug] [2025-10-14T00:02:44.162Z] Checked if tokens are valid: true, expires at: 1760403746658
+[debug] [2025-10-14T00:02:44.162Z] >>> [apiv2][query] POST https://secretmanager.googleapis.com/v1/projects/careai-d0274/secrets secretId=OPENAI_API_KEY
+[debug] [2025-10-14T00:02:44.162Z] >>> [apiv2][body] POST https://secretmanager.googleapis.com/v1/projects/careai-d0274/secrets {"name":"OPENAI_API_KEY","replication":{"automatic":{}},"labels":{"firebase-managed":"functions"}}
+[debug] [2025-10-14T00:02:46.477Z] <<< [apiv2][status] POST https://secretmanager.googleapis.com/v1/projects/careai-d0274/secrets 200
+[debug] [2025-10-14T00:02:46.478Z] <<< [apiv2][body] POST https://secretmanager.googleapis.com/v1/projects/careai-d0274/secrets {"name":"projects/65669784085/secrets/OPENAI_API_KEY","replication":{"automatic":{}},"createTime":"2025-10-14T00:02:44.230685Z","labels":{"firebase-managed":"functions"},"etag":"\"1641131a919c3d\""}

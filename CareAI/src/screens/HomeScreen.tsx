@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Text, Chip, Card, TextInput, IconButton, Avatar } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import AiReply from '../Component/AiReply';
@@ -11,12 +11,18 @@ export default function HomeScreen({ navigation }: any) {
   const [sending, setSending] = useState(false);
 
   const onSend = async () => {
-    if (!message.trim() || sending) return;
+    const text = message.trim();
+    if (!text || sending) return;
     setSending(true);
-    const res = await triageText(message.trim());
-    setReply(res);
-    setMessage('');
-    setSending(false);
+    try {
+      const res = await triageText(text);
+      setReply(res);
+      setMessage('');
+    } catch (e: any) {
+      Alert.alert('Could not send', e?.message || 'Please try again.');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -69,10 +75,17 @@ export default function HomeScreen({ navigation }: any) {
           theme={{ colors: { onSurface: '#FFFFFF', surface: '#0F1224', background: '#0F1224', primary: '#7C3AED' } }}
           onSubmitEditing={onSend}
           returnKeyType="send"
+          editable={!sending}
         />
-        <IconButton icon="microphone" size={22} onPress={() => navigation.navigate('Listening')} style={styles.icon} />
-        <IconButton icon={sending ? 'loading' : 'send'} size={24} onPress={onSend} style={styles.send} disabled={sending} />
+        <IconButton icon="microphone" size={22} onPress={() => navigation.navigate('Listening')} style={styles.icon} disabled={sending} />
+        <IconButton icon="send" size={24} onPress={onSend} style={styles.send} disabled={sending} />
       </View>
+
+      {sending ? (
+        <View style={{ position: 'absolute', right: 28, bottom: 86 }}>
+          <ActivityIndicator />
+        </View>
+      ) : null}
     </View>
   );
 }
