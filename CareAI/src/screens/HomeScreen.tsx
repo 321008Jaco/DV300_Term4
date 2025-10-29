@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, Chip, Card, TextInput, IconButton, Avatar, Button } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import AiReply from '../Component/AiReply';
 import { triageText, TriageAnswer } from '../services/triageService';
 import { saveHistory } from '../services/historyService';
+import { getWelcomeName } from '../services/userService';
 
 const COLORS = {
   bg: '#FAFAFA',
@@ -31,21 +32,31 @@ export default function HomeScreen({ navigation }: any) {
   const [message, setMessage] = useState('');
   const [reply, setReply] = useState<TriageAnswer | null>(null);
   const [sending, setSending] = useState(false);
+  const [welcomeName, setWelcomeName] = useState('there');
+
+  useEffect(() => {
+    getWelcomeName().then(setWelcomeName).catch(() => setWelcomeName('there'));
+  }, []);
 
 const onSend = async () => {
   if (!message.trim() || sending) return;
   setSending(true);
-  const input = message.trim();
   try {
-    const res = await triageText(input);
+    const prompt = message.trim();
+    const res = await triageText(prompt);
     setReply(res);
 
-    const id = await saveHistory(input, res);
-    console.log('saved history id:', id);
+    await saveHistory({
+      prompt,
+      condition: res.condition,
+      level: res.level,
+      dangerous: !!res.dangerous,
+      advice: res.advice,
+    });
 
     setMessage('');
-  } catch (e: any) {
-    console.warn('triage/save failed:', e?.code, e?.message);
+  } catch (e) {
+    // no-op
   } finally {
     setSending(false);
   }
@@ -62,7 +73,7 @@ const onSend = async () => {
       <View style={styles.headerGlow} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.greeting}>Welcome, Jaco!</Text>
+        <Text style={styles.greeting}>Welcome, {welcomeName}!</Text>
         <Text style={styles.subtitle}>How can we help you today?</Text>
 
         <View style={styles.pills}>
@@ -145,14 +156,7 @@ const onSend = async () => {
 
 const styles = StyleSheet.create({
   content: { paddingTop: 48, paddingHorizontal: 20, paddingBottom: 140 },
-  headerGrad: {
-    position: 'absolute',
-    left: -60,
-    right: -60,
-    top: -120,
-    height: 260,
-    borderRadius: 260,
-  },
+  headerGrad: { position: 'absolute', left: -60, right: -60, top: -120, height: 260, borderRadius: 260 },
   headerGlow: {
     position: 'absolute',
     top: -90,
@@ -170,14 +174,7 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 28, fontWeight: '800', color: COLORS.text },
   subtitle: { fontSize: 16, color: '#5b5b73', marginTop: 6 },
   pills: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 18 },
-  pill: {
-    borderColor: COLORS.purple,
-    borderWidth: 1,
-    backgroundColor: COLORS.white,
-    borderRadius: 18,
-    marginRight: 8,
-    marginBottom: 8,
-  },
+  pill: { borderColor: COLORS.purple, borderWidth: 1, backgroundColor: COLORS.white, borderRadius: 18, marginRight: 8, marginBottom: 8 },
   pillText: { color: COLORS.purple, fontSize: 12, fontWeight: '600' },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 26 },
   sectionTitle: { color: COLORS.text, fontSize: 16, fontWeight: '700' },
@@ -194,11 +191,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
   },
   cardContent: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  cardIcon: {
-    backgroundColor: COLORS.purple,
-  },
+  cardIcon: { backgroundColor: COLORS.purple },
   cardTitle: { color: COLORS.text, fontSize: 14, fontWeight: '600' },
-
   inputBar: {
     position: 'absolute',
     left: 16,
@@ -216,14 +210,7 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
   },
-  input: {
-    flex: 1,
-    backgroundColor: COLORS.grayField,
-    borderRadius: 20,
-  },
+  input: { flex: 1, backgroundColor: COLORS.grayField, borderRadius: 20 },
   icon: { margin: 0 },
-  sendBtn: {
-    margin: 0,
-    borderRadius: 24,
-  },
+  sendBtn: { margin: 0, borderRadius: 24 },
 });
