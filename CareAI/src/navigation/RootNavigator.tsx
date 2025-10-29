@@ -7,7 +7,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
-import IntakeScreen from '../screens/IntakeScreen';
 import ResultsScreen from '../screens/ResultsScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import SettingsScreen from '../screens/SettingsScreen';
@@ -24,11 +23,6 @@ function MainTabs() {
         name="Home"
         component={HomeScreen}
         options={{ tabBarIcon: ({ size, color }) => (<MaterialIcons name="home" size={size} color={color} />) }}
-      />
-      <Tab.Screen
-        name="Intake"
-        component={IntakeScreen}
-        options={{ tabBarIcon: ({ size, color }) => (<MaterialIcons name="assignment" size={size} color={color} />) }}
       />
       <Tab.Screen
         name="History"
