@@ -43,20 +43,26 @@ const onSend = async () => {
   setSending(true);
   try {
     const prompt = message.trim();
+
     const res = await triageText(prompt);
     setReply(res);
+    setMessage("");
 
     await saveHistory({
       prompt,
       condition: res.condition,
       level: res.level,
       dangerous: !!res.dangerous,
-      advice: res.advice,
+      advice: Array.isArray(res.advice) ? res.advice : [String(res.advice ?? "")], // <= key fix
     });
-
-    setMessage('');
-  } catch (e) {
-    // no-op
+  } catch (e: any) {
+    console.log("[onSend] error:", e);
+    setReply({
+      condition: "Error",
+      level: "moderate",
+      dangerous: false,
+      advice: [e?.message ?? "Network error. Check connection and try again."],
+    });
   } finally {
     setSending(false);
   }

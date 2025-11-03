@@ -1,0 +1,16 @@
+{
+  // === CareAI Cloudflare Worker (no static assets) ===
+  "name": "careai-proxy",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-10-01",
+
+  // Deploy to workers.dev (your URL stays https://careai-proxy.careai-231008.workers.dev)
+  "workers_dev": true,
+
+  // Normal env vars (safe to commit). Keep OPENAI_API_KEY as a secret.
+  "vars": {
+    "ALLOWED_ORIGIN": ""
+  }
+
+  // No "assets" or "site" block here on purpose.
+}
