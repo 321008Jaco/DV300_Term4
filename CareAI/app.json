@@ -4,13 +4,16 @@
     "slug": "CareAI",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/splash-static.png",
+    "resizeMode": "contain",
+    "backgroundColor": "#FAFAFA",
     "scheme": "careai",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
+    "assetBundlePatterns": ["**/*"],
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
