@@ -1,3 +1,4 @@
+// src/screens/HomeScreen.tsx
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, Chip, Card, TextInput, IconButton, Avatar, Button, ActivityIndicator } from 'react-native-paper';
@@ -7,7 +8,7 @@ import AiReply from '../Component/AiReply';
 import { triageText, TriageAnswer } from '../services/triageService';
 import { saveHistory } from '../services/historyService';
 import { getWelcomeName } from '../services/userService';
-import { startRecording, stopAndTranscribe, cancelRecording } from '../services/voiceService';
+import { startRecording, stopAndTranscribe } from '../services/voiceService';
 
 const COLORS = {
   bg: '#FAFAFA',
@@ -103,7 +104,7 @@ export default function HomeScreen({ navigation }: any) {
   };
 
   const onCancelPress = async () => {
-    try { await cancelRecording(); } catch {}
+    try { await stopAndTranscribe(); } catch {}
     setRecording(false);
     setTranscribing(false);
   };
@@ -130,44 +131,6 @@ export default function HomeScreen({ navigation }: any) {
       >
         <Text style={styles.greeting}>Welcome, {welcomeName}!</Text>
         <Text style={styles.subtitle}>How can we help you today?</Text>
-
-        <View style={styles.pills}>
-          {['Symptom Check', 'Bookmarked Symptoms', 'Emergency Info'].map((label, i) => (
-            <Chip key={i} mode="outlined" style={styles.pill} textStyle={styles.pillText}>
-              {label}
-            </Chip>
-          ))}
-        </View>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Popular topics</Text>
-          <Button compact onPress={() => {}} textColor={COLORS.purple}>
-            See all
-          </Button>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cardsRow}>
-          <Card style={styles.card} mode="elevated">
-            <Card.Content style={styles.cardContent}>
-              <Avatar.Icon size={30} icon="medical-bag" style={styles.cardIcon} color={COLORS.white} />
-              <Text style={styles.cardTitle}>Symptom Check</Text>
-            </Card.Content>
-          </Card>
-
-          <Card style={styles.card} mode="elevated">
-            <Card.Content style={styles.cardContent}>
-              <Avatar.Icon size={30} icon="bookmark" style={styles.cardIcon} color={COLORS.white} />
-              <Text style={styles.cardTitle}>Bookmarked</Text>
-            </Card.Content>
-          </Card>
-
-          <Card style={styles.card} mode="elevated">
-            <Card.Content style={styles.cardContent}>
-              <Avatar.Icon size={30} icon="alert" style={styles.cardIcon} color={COLORS.white} />
-              <Text style={styles.cardTitle}>Emergency Info</Text>
-            </Card.Content>
-          </Card>
-        </ScrollView>
 
         {reply ? <AiReply data={reply} /> : null}
       </ScrollView>

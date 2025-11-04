@@ -1,155 +1,191 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Text, Card, IconButton, ActivityIndicator, Divider, Chip } from 'react-native-paper';
-import { subscribeHistory, deleteHistory, type HistoryItem } from '../services/historyService';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, FlatList, StyleSheet, Alert } from 'react-native';
+import { Card, Text, Chip, ActivityIndicator, IconButton } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { HistoryItem, fetchHistory, subscribeHistory, deleteHistory } from '../services/historyService';
 
 const COLORS = {
   bg: '#FAFAFA',
   text: '#0B0B12',
   subtext: '#5b5b73',
-  white: '#FFFFFF',
+  gray: '#6B6B6B',
+  card: '#FFFFFF',
   purple: '#8B5CF6',
-  purpleShadow: '#7C3AED',
-  green: '#10B981',
-  amber: '#F59E0B',
-  red: '#EF4444',
-  border: '#ECECEC',
+  indigo: '#4F46E5',
+  dangerBg: '#FEE2E2',
+  dangerText: '#B91C1C',
+  chipBg: '#EFEAFE',
+  levelBg: '#E9ECFF',
 };
 
-function prettyDate(ms: number) {
-  try {
-    const d = new Date(ms);
-    return d.toLocaleString();
-  } catch {
-    return '';
-  }
-}
-
-function levelPill(level: string | undefined) {
-  const L = (level || '').toLowerCase();
-  if (L.includes('urgent')) return { label: 'URGENT', bg: '#FEE2E2', fg: COLORS.red };
-  if (L.includes('see'))   return { label: 'SEE DOCTOR', bg: '#FEF3C7', fg: COLORS.amber };
-  return { label: 'SELF-CARE', bg: '#DCFCE7', fg: COLORS.green };
-}
-
 export default function HistoryScreen() {
-  const insets = useSafeAreaInsets();
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const off = subscribeHistory(rows => {
-      setItems(rows);
-      setLoading(false);
-    });
-    return off;
+  const load = useCallback(async () => {
+    setLoading(true);
+    const list = await fetchHistory();
+    setItems(list);
+    setLoading(false);
   }, []);
 
+  useEffect(() => {
+    load();
+    const unsub = subscribeHistory(setItems);
+    return () => unsub();
+  }, [load]);
+
+  const confirmDelete = (id: string) => {
+    Alert.alert(
+      'Delete entry',
+      'Are you sure you want to remove this history item?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeletingId(id);
+              await deleteHistory(id);
+            } finally {
+              setDeletingId(null);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
   const renderItem = ({ item }: { item: HistoryItem }) => {
-    const pill = levelPill(item.level);
+    const isDeleting = deletingId === item.id;
+
     return (
       <Card style={styles.card} mode="elevated">
-        <Card.Content style={{ paddingBottom: 12 }}>
-          <View style={styles.cardHeader}>
-            <View style={{ flex: 1, paddingRight: 8 }}>
-              <Text style={styles.title} numberOfLines={2}>
-                {item.condition || 'Unknown'}
-              </Text>
-              <View style={styles.metaRow}>
-                <Chip
-                style={[styles.pill, { backgroundColor: pill.bg }]}
-                textStyle={[styles.pillText, { color: pill.fg }]}>
-                {pill.label}
-              </Chip>
-                <Text style={styles.metaDate}>{prettyDate(item.createdAt)}</Text>
-              </View>
-            </View>
-            <IconButton
-              icon="delete"
-              onPress={() => deleteHistory(item.id)}
-              containerColor="transparent"
-              iconColor={COLORS.purple}
-            />
+        <Card.Content>
+          <View style={styles.cardActions}>
+            {isDeleting ? (
+              <ActivityIndicator color={COLORS.purple} />
+            ) : (
+              <IconButton
+                icon="delete-outline"
+                size={20}
+                onPress={() => confirmDelete(item.id)}
+                iconColor={COLORS.subtext}
+                style={styles.deleteBtn}
+              />
+            )}
           </View>
 
-          <Divider style={{ marginTop: 8, marginBottom: 10, backgroundColor: COLORS.border }} />
+          <Text style={styles.prompt} numberOfLines={3}>
+            {item.prompt}
+          </Text>
 
-          {Array.isArray(item.advice) && item.advice.length > 0 ? (
-            <View style={{ gap: 6 }}>
-              {item.advice.map((a, i) => (
-                <Text key={i} style={styles.bullet}>
-                  • {a}
+          <View style={styles.row}>
+            <Chip style={[styles.chip, styles.primaryChip]} textStyle={styles.primaryChipText}>
+              {item.condition || 'Unclear cause'}
+            </Chip>
+
+            <Chip style={[styles.chip, styles.levelChip]} textStyle={styles.levelText}>
+              <Text numberOfLines={1} style={styles.levelInner}>
+                {item.level}
+              </Text>
+            </Chip>
+
+            {item.dangerous ? (
+              <Chip style={[styles.chip, styles.danger]} textStyle={styles.dangerText}>
+                <Text numberOfLines={1} style={styles.dangerInner}>
+                  urgent
                 </Text>
-              ))}
-            </View>
-          ) : (
-            <Text style={[styles.bullet, { fontStyle: 'italic', opacity: 0.8 }]}>
-              No recommendations recorded.
+              </Chip>
+            ) : null}
+          </View>
+
+          {item.advice ? (
+            <Text style={styles.advice}>
+              {Array.isArray(item.advice) ? item.advice.join(' ') : item.advice}
             </Text>
-          )}
+          ) : null}
+
+          <Text style={styles.time}>{new Date(item.createdAt).toLocaleString()}</Text>
         </Card.Content>
       </Card>
     );
   };
 
-  return (
-    <SafeAreaView style={[styles.sa, { paddingTop: insets.top }]} edges={['top']}>
-      <View style={[styles.container, { paddingBottom: 16 + insets.bottom }]}>
-        <Text style={styles.screenTitle}>History</Text>
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.center} edges={['top']}>
+        <ActivityIndicator color={COLORS.purple} />
+      </SafeAreaView>
+    );
+  }
 
-        {loading ? (
-          <ActivityIndicator style={{ marginTop: 24 }} />
-        ) : items.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>No history yet</Text>
-            <Text style={styles.emptyText}>Your AI assessments will appear here.</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={items}
-            keyExtractor={(it) => it.id}
-            contentContainerStyle={{ paddingBottom: 8 }}
-            renderItem={renderItem}
-            ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-          />
-        )}
-      </View>
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <FlatList
+        data={items}
+        keyExtractor={(i) => i.id}
+        renderItem={renderItem}
+        contentContainerStyle={items.length ? styles.list : styles.empty}
+        ListEmptyComponent={<Text style={styles.emptyText}>No history yet</Text>}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  sa: { flex: 1, backgroundColor: COLORS.bg },
-  container: { flex: 1, paddingHorizontal: 16 },
-  screenTitle: { fontSize: 22, fontWeight: '800', color: COLORS.text, marginTop: 8, marginBottom: 12 },
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  list: { padding: 16, paddingBottom: 24 },
+  empty: { flexGrow: 1, padding: 16, justifyContent: 'center', alignItems: 'center' },
+  emptyText: { color: COLORS.subtext, fontSize: 16, fontWeight: '600' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
 
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
+    marginBottom: 12,
     borderRadius: 16,
     elevation: 6,
-    shadowColor: COLORS.purpleShadow,
-    shadowOpacity: 0.12,
+    shadowColor: COLORS.indigo,
+    shadowOpacity: 0.18,
     shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 8 },
   },
 
-  cardHeader: { flexDirection: 'row', alignItems: 'flex-start' },
-  title: { color: COLORS.text, fontSize: 16, fontWeight: '700' },
+  cardActions: {
+    position: 'absolute',
+    right: 4,
+    top: 4,
+    zIndex: 2,
+  },
+  deleteBtn: {
+    margin: 0,
+  },
 
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
-  pill: {
-    borderRadius: 14,
-    alignSelf: 'flex-start',
+  prompt: { color: COLORS.text, fontSize: 15, fontWeight: '700', paddingRight: 28 },
+
+  row: { flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' },
+
+  chip: {
+    borderRadius: 18,
+    height: 32,
+    justifyContent: 'center',
+    maxWidth: '60%',
     paddingHorizontal: 10,
-    paddingVertical: 4,
   },
-  pillText: { fontSize: 12, fontWeight: '700', letterSpacing: 0.2 },
-  metaDate: { color: COLORS.subtext, fontSize: 12 },
+  primaryChip: { backgroundColor: COLORS.chipBg },
+  primaryChipText: { color: COLORS.purple, fontWeight: '700' },
 
-  bullet: { color: COLORS.text, lineHeight: 20 },
+  levelChip: { backgroundColor: COLORS.levelBg },
+  levelText: { color: COLORS.indigo, fontWeight: '700' },
+  levelInner: { color: COLORS.indigo, fontWeight: '700' },
 
-  empty: { alignItems: 'center', marginTop: 48, gap: 6 },
-  emptyTitle: { color: COLORS.text, fontWeight: '700' },
-  emptyText: { color: COLORS.subtext },
+  danger: { backgroundColor: COLORS.dangerBg },
+  dangerText: { color: COLORS.dangerText, fontWeight: '700' },
+  dangerInner: { color: COLORS.dangerText, fontWeight: '700' },
+
+  advice: { color: COLORS.text, marginTop: 10, lineHeight: 20 },
+  time: { color: COLORS.subtext, marginTop: 8, fontSize: 12 },
 });

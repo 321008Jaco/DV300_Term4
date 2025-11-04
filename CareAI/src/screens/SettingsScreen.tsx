@@ -1,23 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Switch, Divider, TextInput } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import PrimaryButton from '../Component/PrimaryButton';
 import { useAuth } from '../context/AuthContext';
 import { getAuth } from 'firebase/auth';
 import { getUserProfile, setUsername } from '../services/userService';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const COLORS = {
   bg: '#FAFAFA',
   text: '#0B0B12',
+  subtext: '#5b5b73',
   field: '#E5E5E5',
   purple: '#8B5CF6',
 };
 
 export default function SettingsScreen() {
   const { logout } = useAuth();
-  const insets = useSafeAreaInsets();
-
   const [consent, setConsent] = useState(true);
   const [username, setUsernameField] = useState('');
   const [saving, setSaving] = useState(false);
@@ -29,9 +28,9 @@ export default function SettingsScreen() {
       const prof = await getUserProfile(u.uid);
       const doc = prof as any;
       const uname =
-        (doc?.username && String(doc.username).trim())
+        doc?.username && String(doc.username).trim()
           ? String(doc.username)
-          : (prof as any)?.displayName || '';
+          : prof?.displayName || '';
       setUsernameField(uname);
     };
     run();
@@ -49,24 +48,20 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView
-      edges={['top']}
-      style={[styles.sa, { paddingTop: insets.top }]}
-    >
-      <View style={[styles.container, { paddingBottom: 16 + insets.bottom }]}>
-        <Text variant="headlineMedium" style={styles.title}>Settings</Text>
-        <Divider />
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <View style={styles.container}>
+        <Text style={styles.heading}>Settings</Text>
+        <Divider style={styles.divider} />
 
-        <View style={{ gap: 8, marginTop: 12 }}>
+        <View style={styles.section}>
           <Text style={styles.label}>Username</Text>
           <TextInput
             mode="flat"
             value={username}
             onChangeText={setUsernameField}
             autoCapitalize="none"
-            style={{ backgroundColor: COLORS.field }}
+            style={styles.input}
             underlineStyle={{ display: 'none' }}
-            textColor={COLORS.purple}
           />
           <PrimaryButton
             label={saving ? 'Saving…' : 'Save username'}
@@ -74,7 +69,7 @@ export default function SettingsScreen() {
           />
         </View>
 
-        <Divider style={{ marginVertical: 12 }} />
+        <Divider style={styles.divider} />
 
         <View style={styles.row}>
           <Text style={styles.label}>Data privacy consent</Text>
@@ -88,13 +83,17 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  sa: { flex: 1, backgroundColor: COLORS.bg },
-  container: { flex: 1, paddingHorizontal: 16, gap: 12 },
-  title: { color: COLORS.text },
-  label: { color: COLORS.text, opacity: 0.9 },
+  safe: { flex: 1, backgroundColor: COLORS.bg },
+  container: { flex: 1, padding: 16, gap: 12 },
+  heading: { color: COLORS.text, fontSize: 22, fontWeight: '800' },
+  divider: { marginVertical: 6, opacity: 0.5 },
+  section: { gap: 8 },
+  label: { color: COLORS.text, fontSize: 14, fontWeight: '700' },
+  input: { backgroundColor: COLORS.field, borderRadius: 10 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingVertical: 4,
   },
 });
