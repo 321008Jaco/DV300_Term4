@@ -41,25 +41,28 @@ function MainTabs() {
 export default function RootNavigator() {
   const { user, loading } = useAuth();
 
-  return (
-    <NavigationContainer>
-      {loading ? (
+  const navKey = loading ? 'loading' : user ? 'app' : 'auth';
 
+  return (
+    <NavigationContainer key={navKey}>
+      {loading ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Splash" component={SplashScreen} />
         </Stack.Navigator>
       ) : user ? (
-
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Main" component={MainTabs} />
+          <Stack.Screen
+            name="Main"
+            component={MainTabs}
+            options={{ gestureEnabled: false }}
+          />
           <Stack.Screen name="Results" component={ResultsScreen} />
           <Stack.Screen name="Listening" component={ListeningScreen} />
         </Stack.Navigator>
       ) : (
-
         <Stack.Navigator
           initialRouteName="Login"
-          screenOptions={{ headerShown: false }}
+          screenOptions={{ headerShown: false, gestureEnabled: false, animationTypeForReplace: 'push' }}
         >
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Results" component={ResultsScreen} />

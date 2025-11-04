@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Provider as PaperProvider } from 'react-native-paper';
 import RootNavigator from './src/navigation/RootNavigator';
 import { AuthProvider } from './src/context/AuthContext';
@@ -9,10 +9,6 @@ import AnimatedSplash from './src/Component/AnimatredSplash';
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
-
-  const handleSplashDone = useCallback(() => {
-    setShowSplash(false);
-  }, []);
 
   useEffect(() => {
     (async () => {
@@ -28,9 +24,11 @@ export default function App() {
   return (
     <PaperProvider theme={theme}>
       <AuthProvider>
-        <RootNavigator />
-
-        {showSplash ? <AnimatedSplash onDone={handleSplashDone} /> : null}
+        {showSplash ? (
+          <AnimatedSplash onDone={() => setShowSplash(false)} />
+        ) : (
+          <RootNavigator />
+        )}
       </AuthProvider>
     </PaperProvider>
   );
