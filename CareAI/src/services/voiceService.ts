@@ -1,4 +1,3 @@
-// src/services/voiceService.ts
 import { Audio } from "expo-av";
 
 const ENDPOINT = "https://careai-proxy.careai-231008.workers.dev";
