@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, Chip, Card, TextInput, IconButton, Avatar, Button } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import AiReply from '../Component/AiReply';
 import { triageText, TriageAnswer } from '../services/triageService';
 import { saveHistory } from '../services/historyService';
 import { getWelcomeName } from '../services/userService';
+import { startRecording, stopAndTranscribe } from '../services/voiceService';
 
 const COLORS = {
   bg: '#FAFAFA',
@@ -28,45 +30,65 @@ const inputTheme = {
   },
 } as const;
 
-export default function HomeScreen({ navigation }: any) {
+export default function HomeScreen() {
   const [message, setMessage] = useState('');
   const [reply, setReply] = useState<TriageAnswer | null>(null);
   const [sending, setSending] = useState(false);
+  const [recording, setRecording] = useState(false);
   const [welcomeName, setWelcomeName] = useState('there');
 
   useEffect(() => {
     getWelcomeName().then(setWelcomeName).catch(() => setWelcomeName('there'));
   }, []);
 
-const onSend = async () => {
-  if (!message.trim() || sending) return;
-  setSending(true);
-  try {
-    const prompt = message.trim();
+  const onSend = async () => {
+    if (!message.trim() || sending || recording) return;
+    setSending(true);
+    try {
+      const prompt = message.trim();
 
-    const res = await triageText(prompt);
-    setReply(res);
-    setMessage("");
+      const res = await triageText(prompt);
+      setReply(res);
+      setMessage('');
 
-    await saveHistory({
-      prompt,
-      condition: res.condition,
-      level: res.level,
-      dangerous: !!res.dangerous,
-      advice: Array.isArray(res.advice) ? res.advice : [String(res.advice ?? "")], // <= key fix
-    });
-  } catch (e: any) {
-    console.log("[onSend] error:", e);
-    setReply({
-      condition: "Error",
-      level: "moderate",
-      dangerous: false,
-      advice: [e?.message ?? "Network error. Check connection and try again."],
-    });
-  } finally {
-    setSending(false);
+      await saveHistory({
+        prompt,
+        condition: res.condition,
+        level: res.level,
+        dangerous: !!res.dangerous,
+        advice: Array.isArray(res.advice) ? res.advice : [String(res.advice ?? '')],
+      });
+    } catch (e: any) {
+      console.log('[onSend] error:', e);
+      setReply({
+        condition: 'Error',
+        level: 'moderate',
+        dangerous: false,
+        advice: [e?.message ?? 'Network error. Check connection and try again.'],
+      });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  async function onMicPress() {
+    try {
+      if (!recording) {
+        await startRecording();
+        setRecording(true);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } else {
+        const text = await stopAndTranscribe();
+        setRecording(false);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setMessage(prev => (prev ? `${prev} ${text}` : text));
+      }
+    } catch (e: any) {
+      setRecording(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      console.log('voice error', e?.message || e);
+    }
   }
-};
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
@@ -127,7 +149,7 @@ const onSend = async () => {
         <TextInput
           value={message}
           onChangeText={setMessage}
-          placeholder="Type your symptoms..."
+          placeholder={recording ? 'Listening… tap stop to finish' : 'Type your symptoms...'}
           mode="flat"
           style={styles.input}
           underlineStyle={{ display: 'none' }}
@@ -137,20 +159,21 @@ const onSend = async () => {
           theme={inputTheme}
           onSubmitEditing={onSend}
           returnKeyType="send"
+          editable={!recording}
         />
         <IconButton
-          icon="microphone"
+          icon={recording ? 'stop' : 'microphone'}
           size={22}
-          onPress={() => navigation.navigate('Listening')}
+          onPress={onMicPress}
           style={styles.icon}
           containerColor="transparent"
-          iconColor={COLORS.purple}
+          iconColor={recording ? '#ef4444' : COLORS.purple}
         />
         <IconButton
           icon={sending ? 'loading' : 'send'}
           size={22}
           onPress={onSend}
-          disabled={sending}
+          disabled={sending || recording}
           style={styles.sendBtn}
           containerColor={COLORS.purple}
           iconColor={COLORS.white}

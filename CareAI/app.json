@@ -8,7 +8,9 @@
     "scheme": "careai",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "ios": { "supportsTablet": true },
+    "ios": {
+      "supportsTablet": true
+    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -20,8 +22,11 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "output": "single",          
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-audio"
+    ]
   }
 }
