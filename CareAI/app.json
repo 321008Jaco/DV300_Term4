@@ -5,11 +5,12 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/splash-static.png",
-    "resizeMode": "contain",
     "backgroundColor": "#FAFAFA",
-    "scheme": "careai",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-static.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAFAFA"
+    },
     "ios": {
       "supportsTablet": true
     },
@@ -28,8 +29,6 @@
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
-    "plugins": [
-      "expo-audio"
-    ]
+    "plugins": ["expo-audio"]
   }
 }
