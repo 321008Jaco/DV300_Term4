@@ -13,6 +13,10 @@
 </p>
 
 <p align="center">
+NOTE: Work from branch= "restore-dc87c12"
+</p>
+
+<p align="center">
   <a href="https://expo.dev/"><img src="https://img.shields.io/badge/Expo-51%2B-000?logo=expo&logoColor=white" alt="Expo" /></a>
   <a href="https://firebase.google.com/"><img src="https://img.shields.io/badge/Firebase-Auth%20%7C%20Firestore%20%7C%20Storage-ffca28?logo=firebase&logoColor=black" alt="Firebase" /></a>
   <a href="https://reactnative.dev/"><img src="https://img.shields.io/badge/React%20Native-0.7x-61dafb?logo=react&logoColor=black" alt="RN" /></a>
@@ -48,6 +52,8 @@
 
 **CareAI** is a cross-platform mobile app built with **React Native + Firebase**.  
 It allows users to **type or speak their symptoms**, and receive AI-powered health triage advice in seconds.
+
+---
 
 ### Core Features:
 -  Animated splash screen with logo
@@ -89,12 +95,6 @@ It allows users to **type or speak their symptoms**, and receive AI-powered heal
 | **Settings** | Account preferences and logout |
 
 [⬆️ Back to top](#careai)
-
----
-
-## Demo Video
-
-
 
 ---
 
@@ -264,5 +264,11 @@ Google Cloud Speech API
 Figma & Stack Overflow – Design & Community Support
 
 ⬆️ Back to top
+
+---
+
+## Demo Video
+
+
 
 ---

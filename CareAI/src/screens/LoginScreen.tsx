@@ -24,7 +24,6 @@ import { auth, db } from '../services/firebase';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import Svg, { Defs, LinearGradient as SvgLg, Stop, Path } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CommonActions } from '@react-navigation/native';
 import { Image } from 'react-native';
 
 const COLORS = {
@@ -170,12 +169,6 @@ export default function LoginScreen({ navigation }: any) {
 
       await AsyncStorage.setItem('onboarding:showOnce', '1');
 
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'Main' }],
-        })
-      );
     } catch (e: any) {
       Alert.alert('Signup failed', e?.message || 'Please try again.');
     } finally {
