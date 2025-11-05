@@ -1,7 +1,11 @@
 {
   "expo": {
     "name": "CareAI",
-    "slug": "CareAI",
+    "slug": "careai",
+    "owner": "jacomostert",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/splash-static.png",
@@ -14,7 +18,9 @@
     "ios": {
       "supportsTablet": true
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -23,12 +29,28 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
-    "plugins": ["expo-audio"]
+    "plugins": [
+      "expo-audio"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "88888138-33b6-4b11-ba97-50ab0494d2b8"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/88888138-33b6-4b11-ba97-50ab0494d2b8"
+    }
   }
 }
