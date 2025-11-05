@@ -6,21 +6,48 @@ import type { TriageAnswer } from '../services/triageService';
 
 type Props = { data: TriageAnswer };
 
+type BadgeLevel = "self-care" | "gp" | "emergency";
+function toBadgeLevel(level: string | undefined, dangerous?: boolean): BadgeLevel {
+  if (dangerous) return "emergency";
+  const l = (level || "").toLowerCase().trim();
+
+  if (["self-care", "selfcare", "mild"].includes(l)) return "self-care";
+  if (["gp", "see-doctor", "see_doctor", "doctor", "moderate"].includes(l)) return "gp";
+  if (["urgent", "er", "a&e", "emergency", "ed"].includes(l)) return "emergency";
+
+  return "gp";
+}
+
 export default function AiReply({ data }: Props) {
+  const adviceArr = Array.isArray(data.advice) ? data.advice : [String(data.advice ?? '')].filter(Boolean);
+
   return (
     <View style={styles.wrap}>
       <View style={styles.glow} />
       <Card style={styles.card}>
-        <Card.Title title="AI Assessment" right={() => <TriageBadge level={data.level} />} />
+        <Card.Title
+          title="AI Assessment"
+          right={() => <TriageBadge level={toBadgeLevel(data.level as any, data.dangerous)} />}
+        />
         <Card.Content>
           <Text style={styles.label}>Possible issue</Text>
           <Text style={styles.value}>{data.condition}</Text>
+
           <Text style={styles.label}>Risk</Text>
           <Text style={[styles.value, data.dangerous ? styles.danger : styles.safe]}>
             {data.dangerous ? 'Potentially serious' : 'Likely minor'}
           </Text>
+
           <Text style={styles.label}>Recommendation</Text>
-          <Text style={styles.value}>{data.advice}</Text>
+          {adviceArr.length > 0 ? (
+            <View style={{ marginTop: 2 }}>
+              {adviceArr.map((line, idx) => (
+                <Text key={idx} style={styles.value}>• {line}</Text>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.value}>No advice available.</Text>
+          )}
         </Card.Content>
       </Card>
     </View>

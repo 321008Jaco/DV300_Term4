@@ -10,9 +10,10 @@ function resolveCors(origin: string | null | undefined, allowedCsv?: string) {
     .split(",")
     .map(s => s.trim())
     .filter(Boolean);
-  if (list.length === 0) return origin || "*";
+
+  if (list.length === 0) return origin || "*";    
   if (origin && list.includes(origin)) return origin;
-  return list[0];
+  return list[0];                                    
 }
 
 function corsHeaders(origin: string) {
@@ -35,43 +36,43 @@ async function readJsonSafe<T = any>(
   }
 }
 
+function json(body: unknown, init: ResponseInit = {}) {
+  const payload = typeof body === "string" ? body : JSON.stringify(body);
+  return new Response(payload, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init.headers || {}),
+    },
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const origin = resolveCors(request.headers.get("Origin"), env.ALLOWED_ORIGIN);
     const baseHeaders = corsHeaders(origin);
 
-    console.log("PATH:", url.pathname, "METHOD:", request.method, "UA:", request.headers.get("User-Agent") || "-");
-
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: baseHeaders });
     }
 
     if (!env.OPENAI_API_KEY) {
-      return new Response(JSON.stringify({ error: "Missing OPENAI_API_KEY" }), {
-        status: 500,
-        headers: { ...baseHeaders, "Content-Type": "application/json" },
-      });
+      return json({ error: "Missing OPENAI_API_KEY" }, { status: 500, headers: baseHeaders });
     }
 
     if (url.pathname === "/transcribe") {
       if (request.method !== "POST") {
-        return new Response(JSON.stringify({ error: "Use POST" }), {
-          status: 405,
-          headers: { ...baseHeaders, "Content-Type": "application/json" },
-        });
+        return json({ error: "Use POST" }, { status: 405, headers: baseHeaders });
       }
 
       try {
         const form = await request.formData();
         const fileEntry = form.get("file");
-        const requested = (form.get("model") as string) || "gpt-4o-mini-transcribe";
+        const requestedModel = (form.get("model") as string) || "gpt-4o-mini-transcribe";
 
         if (!(fileEntry instanceof Blob)) {
-          return new Response(JSON.stringify({ error: "Missing audio file (field 'file')" }), {
-            status: 400,
-            headers: { ...baseHeaders, "Content-Type": "application/json" },
-          });
+          return json({ error: "Missing audio file (field 'file')" }, { status: 400, headers: baseHeaders });
         }
 
         const audioBlob = fileEntry as Blob;
@@ -90,7 +91,7 @@ export default {
           });
         }
 
-        let r = await callTranscribe(requested);
+        let r = await callTranscribe(requestedModel);
         let txt = await r.text();
         let ct = r.headers.get("content-type") || "";
 
@@ -100,7 +101,7 @@ export default {
             const code = j?.error?.code || j?.error;
             if ((r.status === 404 || r.status === 400 || r.status === 403) &&
                 code === "model_not_found" &&
-                requested !== "gpt-4o-mini-transcribe") {
+                requestedModel !== "gpt-4o-mini-transcribe") {
               r = await callTranscribe("gpt-4o-mini-transcribe");
               txt = await r.text();
               ct = r.headers.get("content-type") || "";
@@ -111,13 +112,9 @@ export default {
         }
 
         if (!ct.includes("application/json")) {
-          return new Response(
-            JSON.stringify({
-              error: "Upstream non-JSON response",
-              upstream_status: r.status,
-              raw: txt?.slice(0, 200) || "",
-            }),
-            { status: 502, headers: { ...baseHeaders, "Content-Type": "application/json" } }
+          return json(
+            { error: "Upstream non-JSON response", upstream_status: r.status, raw: txt?.slice(0, 200) || "" },
+            { status: 502, headers: baseHeaders }
           );
         }
 
@@ -126,54 +123,54 @@ export default {
           headers: { ...baseHeaders, "Content-Type": "application/json" },
         });
       } catch (e: any) {
-        return new Response(JSON.stringify({ error: e?.message || "Transcription error" }), {
-          status: 500,
-          headers: { ...baseHeaders, "Content-Type": "application/json" },
-        });
+        return json({ error: e?.message || "Transcription error" }, { status: 500, headers: baseHeaders });
       }
     }
 
     if (request.method !== "POST") {
-      return new Response(JSON.stringify({ error: "Use POST" }), {
-        status: 405,
-        headers: { ...baseHeaders, "Content-Type": "application/json" },
-      });
+      return json({ error: "Use POST" }, { status: 405, headers: baseHeaders });
     }
 
-    const parsed = await readJsonSafe<{ model?: string; temperature?: number; messages?: Msg[] }>(request);
+    const parsed = await readJsonSafe<{
+      model?: string;
+      temperature?: number;
+      messages?: Msg[];
+      response_format?: { type: "json_object" } | Record<string, any>;
+    }>(request);
+
     if (!parsed.ok) {
-      return new Response(JSON.stringify({ error: parsed.error }), {
-        status: 400,
-        headers: { ...baseHeaders, "Content-Type": "application/json" },
-      });
+      return json({ error: parsed.error }, { status: 400, headers: baseHeaders });
     }
 
-    const { model, temperature, messages } = parsed.data || {};
+    const body = parsed.data || {};
+    const messages = body.messages;
+
     if (!Array.isArray(messages)) {
-      return new Response(JSON.stringify({ error: "messages must be an array" }), {
-        status: 400,
-        headers: { ...baseHeaders, "Content-Type": "application/json" },
-      });
+      return json({ error: "messages must be an array" }, { status: 400, headers: baseHeaders });
     }
 
-    const primaryModel = model || "o4-mini";
-    const payload: Record<string, any> = { model: primaryModel, messages };
-    if (typeof temperature === "number") payload.temperature = temperature;
+    const primaryModel = body.model || "o4-mini";
+    const payload: Record<string, any> = {
+      model: primaryModel,
+      messages,
+    };
 
-    if (payload.model === "o4-mini" && "temperature" in payload) {
-      delete payload.temperature;
+    if (typeof body.temperature === "number" && primaryModel !== "o4-mini") {
+      payload.temperature = body.temperature;
     }
 
-    console.log("model:", payload.model, "hasTemp:", "temperature" in payload);
+    if (body.response_format && typeof body.response_format === "object") {
+      payload.response_format = body.response_format;
+    }
 
-    async function callOpenAI(body: any) {
+    async function callOpenAI(reqBody: any) {
       return fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${env.OPENAI_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(reqBody),
       });
     }
 
@@ -185,12 +182,10 @@ export default {
         try {
           const j = txt ? JSON.parse(txt) : null;
           const code = j?.error?.code || j?.error;
-          if ((r.status === 404 || r.status === 400) &&
-              code === "model_not_found" &&
-              primaryModel !== "o4-mini") {
-            const fallbackPayload = { ...payload, model: "o4-mini" };
-            if ("temperature" in fallbackPayload) delete (fallbackPayload as any).temperature;
-            r = await callOpenAI(fallbackPayload);
+          if ((r.status === 404 || r.status === 400) && code === "model_not_found" && primaryModel !== "o4-mini") {
+            const fallback: Record<string, any> = { ...payload, model: "o4-mini" };
+            if ("temperature" in fallback) delete fallback.temperature;
+            r = await callOpenAI(fallback);
             txt = await r.text();
           }
         } catch {
@@ -203,11 +198,7 @@ export default {
         headers: { ...baseHeaders, "Content-Type": "application/json" },
       });
     } catch (e: any) {
-      const message = e?.message || "Upstream error";
-      return new Response(JSON.stringify({ error: message }), {
-        status: 500,
-        headers: { ...baseHeaders, "Content-Type": "application/json" },
-      });
+      return json({ error: e?.message || "Upstream error" }, { status: 500, headers: baseHeaders });
     }
   },
 };

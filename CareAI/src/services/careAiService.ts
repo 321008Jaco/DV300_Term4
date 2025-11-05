@@ -1,36 +1,40 @@
 export type Msg = { role: "system" | "user" | "assistant"; content: string };
 
-const ENDPOINT = "https://careai-proxy.careai-231008.workers.dev";
+const ENDPOINT = "https://careai-proxy.careai-231008.workers.dev/";
 const MODEL = "o4-mini";
 
 export const system: Msg = {
   role: "system",
   content: [
     "You are CareAI. Be cautious and DO NOT provide a medical diagnosis.",
-    "Return ONLY JSON with this shape:",
-    '{ "condition": "<short label>", "level": "<mild|moderate|severe>", "dangerous": <true|false>, "advice": ["<tip1>", "<tip2>"] }',
-    "No extra text. If info is missing (age, duration, severity, temperature, meds, history, pregnancy), keep wording neutral.",
-    "If red flags exist, set dangerous:true and include seeking urgent care in advice."
+    'Return ONLY JSON with this shape: {"condition":"<short>","level":"self-care|gp|emergency","dangerous":true|false,"advice":["tip1","tip2"]}',
+    "No extra text. If info is missing, keep wording neutral. If red flags exist, set dangerous:true and include urgent care in advice."
   ].join(" ")
 };
 
 export async function careAiChat(messages: Msg[]) {
-  const res = await fetch(ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Accept": "application/json" },
-    body: JSON.stringify({
-      model: MODEL,
-      messages
-    }),
-  });
+  const url = `${ENDPOINT}?t=${Date.now()}`;
 
-  const text = await res.text();
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ model: MODEL, messages }),
+    });
+  } catch (e: any) {
+    console.log("[careAiChat] network error:", e?.message || e);
+    throw new Error(`Network error reaching Worker: ${e?.message || e}`);
+  }
+
+  const raw = await res.text();
+  console.log("[careAiChat] status:", res.status, "body:", raw.slice(0, 300));
 
   let data: any = null;
   try {
-    data = text ? JSON.parse(text) : null;
+    data = raw ? JSON.parse(raw) : null;
   } catch {
-    throw new Error(`Bad JSON from API: ${text.slice(0, 300)}`);
+    throw new Error(`Worker returned non-JSON: ${raw.slice(0, 200)}`);
   }
 
   if (!res.ok) {
@@ -41,7 +45,7 @@ export async function careAiChat(messages: Msg[]) {
 
   const content = data?.choices?.[0]?.message?.content;
   if (typeof content !== "string" || !content.trim()) {
-    throw new Error("Empty response from model");
+    throw new Error(`Worker OK but empty content. Payload: ${JSON.stringify(data).slice(0, 300)}`);
   }
   return content;
 }

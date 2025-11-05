@@ -1,4 +1,3 @@
-// src/screens/HomeScreen.tsx
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, Chip, Card, TextInput, IconButton, Avatar, Button, ActivityIndicator } from 'react-native-paper';
@@ -60,7 +59,7 @@ export default function HomeScreen({ navigation }: any) {
       const seen = await getOnboardingSeen(u.uid);
       if (!seen) setShowOnboarding(true);
     })();
-  }, []); // ADDED
+  }, []);
 
   async function closeOnboarding() {
     const u = getAuth().currentUser;

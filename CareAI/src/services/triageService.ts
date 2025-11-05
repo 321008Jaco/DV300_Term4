@@ -2,7 +2,7 @@ import { careAiChat, type Msg } from "./careAiService";
 
 export type TriageAnswer = {
   condition: string;
-  level: "urgent" | "see-doctor" | "self-care" | string;
+  level: "self-care" | "gp" | "emergency" | string;
   dangerous: boolean;
   advice: string[];
 };
@@ -12,7 +12,7 @@ const SYSTEM: Msg = {
   content:
     "You are CareAI, a cautious health assistant. Do NOT provide a diagnosis. " +
     "Return ONLY valid JSON like: " +
-    `{"condition":"Likely cause (short)","level":"urgent|see-doctor|self-care","dangerous":true|false,"advice":["short action 1","short action 2","short action 3"]} ` +
+    `{"condition":"Likely cause (short)","level":"self-care|gp|emergency","dangerous":true|false,"advice":["short action 1","short action 2","short action 3"]} ` +
     "Rules: (1) advice must be an array of 3-6 short, plain sentences; (2) no Markdown; (3) no extra keys."
 };
 
@@ -55,37 +55,42 @@ function normalizeAdvice(input: any): string[] {
   return cleaned.length ? cleaned : ["Consider basic self-care measures and monitor your symptoms."];
 }
 
+function extractJsonObject(text: string): any | null {
+  if (!text || typeof text !== "string") return null;
+
+  const stripped = text
+    .replace(/^```(json)?/i, "")
+    .replace(/```$/i, "")
+    .trim();
+
+  const match = stripped.match(/\{[\s\S]*\}/);
+  if (!match) return null;
+
+  try {
+    return JSON.parse(match[0]);
+  } catch {
+    try {
+      const sanitized = match[0]
+        .replace(/,\s*}/g, "}")
+        .replace(/,\s*]/g, "]");
+      return JSON.parse(sanitized);
+    } catch {
+      return null;
+    }
+  }
+}
+
 export async function triageText(userText: string): Promise<TriageAnswer> {
   const messages: Msg[] = [
     SYSTEM,
     { role: "user", content: `Symptoms: ${userText}\nReturn JSON only.` }
   ];
 
-  const raw: unknown = await careAiChat(messages);
+  const content = await careAiChat(messages);
 
-  let openai: any = null;
-  if (typeof raw === "string") {
-    try {
-      openai = JSON.parse(raw);
-    } catch {
-      openai = { choices: [{ message: { content: raw } }] };
-    }
-  } else {
-    openai = raw;
-  }
+  console.log("[triageText] preview:", String(content).slice(0, 220));
 
-  const content =
-    openai?.choices?.[0]?.message?.content ??
-    openai?.choices?.[0]?.message ??
-    openai?.choices?.[0]?.text ??
-    "";
-
-  let parsed: any = {};
-  try {
-    parsed = typeof content === "string" ? JSON.parse(content) : content || {};
-  } catch {
-    parsed = {};
-  }
+  let parsed: any = extractJsonObject(String(content)) ?? {};
 
   const condition = coerceString(parsed?.condition || "Unknown");
   const level = coerceString(parsed?.level || "self-care") as TriageAnswer["level"];
