@@ -23,6 +23,8 @@ import {
 import { auth, db } from '../services/firebase';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import Svg, { Defs, LinearGradient as SvgLg, Stop, Path } from 'react-native-svg';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Image } from 'react-native';
 
 const COLORS = {
   bg: '#FAFAFA',
@@ -60,7 +62,6 @@ type LoginVals = { email: string; password: string };
 type SignupVals = { email: string; password: string; confirm: string; dialCode: string };
 
 export default function LoginScreen({ navigation }: any) {
-  // --- Login form ---
   const loginForm = useForm<LoginVals>({
     resolver: yupResolver(loginSchema),
     defaultValues: { email: '', password: '' },
@@ -71,7 +72,10 @@ export default function LoginScreen({ navigation }: any) {
     if (loggingIn) return;
     setLoggingIn(true);
     try {
-    await signInWithEmailAndPassword(auth, vals.email.trim(), vals.password);
+      const email = vals.email.trim().toLowerCase();
+      const password = vals.password;
+      await signInWithEmailAndPassword(auth, email, password);
+      await AsyncStorage.setItem('onboarding:showOnce', '1');
     } catch (e: any) {
       Alert.alert('Login failed', e?.message || 'Please try again.');
     } finally {
@@ -80,7 +84,7 @@ export default function LoginScreen({ navigation }: any) {
   };
 
   const onForgot = async () => {
-    const email = loginForm.getValues('email')?.trim();
+    const email = loginForm.getValues('email')?.trim().toLowerCase();
     if (!email) {
       Alert.alert('Forgot Password', 'Enter your email first.');
       return;
@@ -93,7 +97,6 @@ export default function LoginScreen({ navigation }: any) {
     }
   };
 
-  // --- Bottom Sign-Up sheet ---
   const SHEET_OPEN_Y = 0;
   const SHEET_CLOSED_Y = 260;
 
@@ -143,7 +146,6 @@ export default function LoginScreen({ navigation }: any) {
     []
   );
 
-  // --- Sign-Up form ---
   const signupForm = useForm<SignupVals>({
     resolver: yupResolver(signupSchema),
     defaultValues: { email: '', password: '', confirm: '', dialCode: '+27' },
@@ -154,7 +156,9 @@ export default function LoginScreen({ navigation }: any) {
     if (signingUp) return;
     setSigningUp(true);
     try {
-      const cred = await createUserWithEmailAndPassword(auth, vals.email.trim(), vals.password);
+      const email = vals.email.trim().toLowerCase();
+      const password = vals.password;
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: cred.user.email?.split('@')[0] || 'User' });
       await setDoc(doc(db, 'users', cred.user.uid), {
         uid: cred.user.uid,
@@ -162,7 +166,9 @@ export default function LoginScreen({ navigation }: any) {
         phoneDialCode: vals.dialCode,
         createdAt: serverTimestamp(),
       });
-      navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+
+      await AsyncStorage.setItem('onboarding:showOnce', '1');
+
     } catch (e: any) {
       Alert.alert('Signup failed', e?.message || 'Please try again.');
     } finally {
@@ -175,12 +181,10 @@ export default function LoginScreen({ navigation }: any) {
       behavior={Platform.select({ ios: 'padding', android: undefined })}
       style={{ flex: 1, backgroundColor: COLORS.bg }}
     >
-      {/* Logo */}
       <View style={{ alignItems: 'center', paddingTop: 60 }}>
         <CrossEmblem />
       </View>
 
-      {/* Login form */}
       <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
         <Text variant="headlineLarge" style={{ fontWeight: '800', color: COLORS.text, marginBottom: 16 }}>
           Log In
@@ -236,7 +240,6 @@ export default function LoginScreen({ navigation }: any) {
         </Button>
       </View>
 
-      {/* Wave/Swipe */}
       <TouchableOpacity activeOpacity={0.8} onPress={openSheet} style={styles.waveContainer}>
         <Wave />
         <View style={styles.waveOverlay}>
@@ -245,7 +248,6 @@ export default function LoginScreen({ navigation }: any) {
         </View>
       </TouchableOpacity>
 
-      {/* Sign-Up Sheet */}
       <Animated.View
         {...panResponder.panHandlers}
         style={[styles.sheet, styles.sheetShadow, { transform: [{ translateY }] }]}
@@ -347,16 +349,26 @@ export default function LoginScreen({ navigation }: any) {
   );
 }
 
-/* ========== Logo ========== */
-
 function CrossEmblem() {
   return (
-    <View style={{ shadowColor: COLORS.purple, shadowOpacity: 0.6, shadowRadius: 12 }}>
-      <LinearGradient
-        colors={[COLORS.indigo, COLORS.purple]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ width: 110, height: 150, borderRadius: 20, opacity: 0.35 }}
+    <View
+      style={{
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: 6,
+        shadowColor: COLORS.purple,
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 6 },
+      }}
+    >
+      <Image
+        source={require('../../assets/images/splash-static.png')}
+        style={{
+          width: 160,
+          height: 160,
+          resizeMode: 'contain',
+        }}
       />
     </View>
   );
@@ -377,8 +389,6 @@ function Wave() {
             <Stop offset="1" stopColor="#8B5CF6" />
           </SvgLg>
         </Defs>
-
-        {/* The top edge is the squiggly curve. Adjust control points to taste. */}
         <Path
           d="
             M 0 90
@@ -411,8 +421,6 @@ function UpArrow() {
   );
 }
 
-/* ========== Styles ========== */
-
 const styles = StyleSheet.create({
   field: {
     backgroundColor: COLORS.grayField,
@@ -428,20 +436,20 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
   },
-waveContainer: {
-  position: 'absolute',
-  left: 0,
-  right: 0,
-  bottom: 0,
-  height: 200,
-},
-waveOverlay: {
-  position: 'absolute',
-  left: 0,
-  right: 0,
-  bottom: 36,
-  alignItems: 'center',
-},
+  waveContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 200,
+  },
+  waveOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 36,
+    alignItems: 'center',
+  },
 
   sheet: {
     position: 'absolute',

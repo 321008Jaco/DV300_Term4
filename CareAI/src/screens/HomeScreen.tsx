@@ -9,6 +9,9 @@ import { triageText, TriageAnswer } from '../services/triageService';
 import { saveHistory } from '../services/historyService';
 import { getWelcomeName } from '../services/userService';
 import { startRecording, stopAndTranscribe } from '../services/voiceService';
+import { getAuth } from 'firebase/auth';
+import { getOnboardingSeen, setOnboardingSeen } from '../services/onboarding';
+import OnboardingModal from '../Component/OnboardingModal';
 
 const COLORS = {
   bg: '#FAFAFA',
@@ -41,13 +44,29 @@ export default function HomeScreen({ navigation }: any) {
   const [sending, setSending] = useState(false);
   const [welcomeName, setWelcomeName] = useState('there');
 
-  // voice
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     getWelcomeName().then(setWelcomeName).catch(() => setWelcomeName('there'));
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      const u = getAuth().currentUser;
+      if (!u) return;
+      const seen = await getOnboardingSeen(u.uid);
+      if (!seen) setShowOnboarding(true);
+    })();
+  }, []); // ADDED
+
+  async function closeOnboarding() {
+    const u = getAuth().currentUser;
+    if (u) await setOnboardingSeen(u.uid);
+    setShowOnboarding(false);
+  }
 
   async function sendPrompt(prompt: string) {
     if (!prompt.trim()) return;
@@ -203,6 +222,8 @@ export default function HomeScreen({ navigation }: any) {
           iconColor={COLORS.white}
         />
       </View>
+
+      <OnboardingModal visible={showOnboarding} onClose={closeOnboarding} />
     </SafeAreaView>
   );
 }
@@ -251,9 +272,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
+    bottom: 24,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.grayField,
     borderRadius: 28,
     paddingLeft: 14,
     paddingRight: 6,
