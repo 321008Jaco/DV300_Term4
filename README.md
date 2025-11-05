@@ -265,6 +265,16 @@ Figma & Stack Overflow – Design & Community Support
 
 ---
 
+## Live CareAI Project
+
+<p>Download the Expo Go app on your mobile device</p>
+<p>IOS = App Store</p>
+<p>Android = Play Store</p>
+
+<img width="259" height="260" alt="Live Expo go qr" src="https://github.com/user-attachments/assets/0d6aae51-be53-42e6-b766-4e8607ffcf5e" />
+
+---
+
 ## Demo Video
 
 [CareAI Demo](https://drive.google.com/file/d/1Lz64jWXWbrHlqj991lrI6oo2q6TfBf5w/view?usp=sharing)
