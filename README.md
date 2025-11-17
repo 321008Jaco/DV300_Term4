@@ -271,7 +271,7 @@ Figma & Stack Overflow – Design & Community Support
 <p>IOS = App Store</p>
 <p>Android = Play Store</p>
 
-<img width="250" height="253" alt="CareAI-QR" src="https://github.com/user-attachments/assets/23e6c3d3-4677-475a-85a7-904c2d473066" />
+<img width="253" height="255" alt="CareAI-QR" src="https://github.com/user-attachments/assets/6f9b5049-a27b-4b70-9caf-0308fd8c6c49" />
 
 ---
 
