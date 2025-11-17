@@ -1,30 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  Animated,
-  PanResponder,
-  Alert,
-  TouchableOpacity,
-} from 'react-native';
-import { Text, TextInput, Button } from 'react-native-paper';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useForm } from 'react-hook-form';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {View, StyleSheet, KeyboardAvoidingView, Platform, Animated, PanResponder, Alert, TouchableOpacity, Image, Keyboard} from 'react-native';
+import {Text, TextInput, Button} from 'react-native-paper';
+import {LinearGradient} from 'expo-linear-gradient';
+import {useForm} from 'react-hook-form';
 import * as yup from 'yup';
-import { yupResolver } from '@hookform/resolvers/yup';
-import {
-  signInWithEmailAndPassword,
-  sendPasswordResetEmail,
-  createUserWithEmailAndPassword,
-  updateProfile,
-} from 'firebase/auth';
-import { auth, db } from '../services/firebase';
-import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
-import Svg, { Defs, LinearGradient as SvgLg, Stop, Path } from 'react-native-svg';
+import {yupResolver} from '@hookform/resolvers/yup';
+import {signInWithEmailAndPassword, sendPasswordResetEmail, createUserWithEmailAndPassword, updateProfile} from 'firebase/auth';
+import {auth, db} from '../services/firebase';
+import {doc, serverTimestamp, setDoc} from 'firebase/firestore';
+import Svg, {Defs, LinearGradient as SvgLg, Stop, Path} from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Image } from 'react-native';
 
 const COLORS = {
   bg: '#FAFAFA',
@@ -55,16 +40,15 @@ const signupSchema = yup.object({
   email: yup.string().email('Invalid email').required('Required'),
   password: yup.string().min(6, 'Min 6 chars').required('Required'),
   confirm: yup.string().oneOf([yup.ref('password')], 'Passwords must match').required('Required'),
-  dialCode: yup.string().required(),
 });
 
-type LoginVals = { email: string; password: string };
-type SignupVals = { email: string; password: string; confirm: string; dialCode: string };
+type LoginVals = {email: string; password: string};
+type SignupVals = {email: string; password: string; confirm: string};
 
-export default function LoginScreen({ navigation }: any) {
+export default function LoginScreen({navigation}: any) {
   const loginForm = useForm<LoginVals>({
     resolver: yupResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: {email: '', password: ''},
   });
   const [loggingIn, setLoggingIn] = useState(false);
 
@@ -98,18 +82,30 @@ export default function LoginScreen({ navigation }: any) {
   };
 
   const SHEET_OPEN_Y = 0;
-  const SHEET_CLOSED_Y = 260;
+  const SHEET_CLOSED_Y = 300;
 
   const translateY = useRef(new Animated.Value(SHEET_CLOSED_Y)).current;
   const currentY = useRef(SHEET_CLOSED_Y);
   const isOpenRef = useRef(false);
 
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
   useEffect(() => {
-    const id = translateY.addListener(({ value }) => (currentY.current = value));
+    const id = translateY.addListener(({value}) => (currentY.current = value));
     return () => translateY.removeListener(id);
   }, [translateY]);
 
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   const clamp = (v: number) => Math.max(SHEET_OPEN_Y, Math.min(SHEET_CLOSED_Y, v));
+
   const openSheet = () => {
     isOpenRef.current = true;
     Animated.spring(translateY, {
@@ -118,6 +114,7 @@ export default function LoginScreen({ navigation }: any) {
       bounciness: 4,
     }).start();
   };
+
   const closeSheet = () => {
     isOpenRef.current = false;
     Animated.spring(translateY, {
@@ -148,7 +145,7 @@ export default function LoginScreen({ navigation }: any) {
 
   const signupForm = useForm<SignupVals>({
     resolver: yupResolver(signupSchema),
-    defaultValues: { email: '', password: '', confirm: '', dialCode: '+27' },
+    defaultValues: {email: '', password: '', confirm: ''},
   });
   const [signingUp, setSigningUp] = useState(false);
 
@@ -159,16 +156,15 @@ export default function LoginScreen({ navigation }: any) {
       const email = vals.email.trim().toLowerCase();
       const password = vals.password;
       const cred = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(cred.user, { displayName: cred.user.email?.split('@')[0] || 'User' });
+      await updateProfile(cred.user, {
+        displayName: cred.user.email?.split('@')[0] || 'User',
+      });
       await setDoc(doc(db, 'users', cred.user.uid), {
         uid: cred.user.uid,
         email: cred.user.email,
-        phoneDialCode: vals.dialCode,
         createdAt: serverTimestamp(),
       });
-
       await AsyncStorage.setItem('onboarding:showOnce', '1');
-
     } catch (e: any) {
       Alert.alert('Signup failed', e?.message || 'Please try again.');
     } finally {
@@ -177,104 +173,30 @@ export default function LoginScreen({ navigation }: any) {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.select({ ios: 'padding', android: undefined })}
-      style={{ flex: 1, backgroundColor: COLORS.bg }}
-    >
-      <View style={{ alignItems: 'center', paddingTop: 60 }}>
-        <CrossEmblem />
-      </View>
-
-      <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
-        <Text variant="headlineLarge" style={{ fontWeight: '800', color: COLORS.text, marginBottom: 16 }}>
-          Log In
-        </Text>
-
-        <TextInput
-          mode="flat"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={loginForm.getValues('email')}
-          onChangeText={(t) => loginForm.setValue('email', t, { shouldValidate: true })}
-          placeholder="Email"
-          style={styles.field}
-          underlineStyle={{ display: 'none' }}
-          placeholderTextColor={COLORS.grayPlaceholder}
-          error={!!loginForm.formState.errors.email}
-          textColor={COLORS.purple}
-          selectionColor={COLORS.purple}
-          theme={inputTheme}
-        />
-        <TextInput
-          mode="flat"
-          secureTextEntry
-          value={loginForm.getValues('password')}
-          onChangeText={(t) => loginForm.setValue('password', t, { shouldValidate: true })}
-          placeholder="Password"
-          style={styles.field}
-          underlineStyle={{ display: 'none' }}
-          placeholderTextColor={COLORS.grayPlaceholder}
-          error={!!loginForm.formState.errors.password}
-          textColor={COLORS.purple}
-          selectionColor={COLORS.purple}
-          theme={inputTheme}
-        />
-
-        <View style={{ alignItems: 'flex-end', marginTop: 6 }}>
-          <TouchableOpacity onPress={onForgot}>
-            <Text style={{ fontWeight: '700', color: 'rgba(0,0,0,0.6)' }}>Forgot Password?</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Button
-          mode="contained"
-          loading={loggingIn}
-          disabled={loggingIn}
-          onPress={loginForm.handleSubmit(onLogin)}
-          style={styles.loginButton}
-          contentStyle={{ height: 56 }}
-          labelStyle={{ fontSize: 18, fontWeight: '800' }}
-          buttonColor={COLORS.purple}
-        >
-          Log In
-        </Button>
-      </View>
-
-      <TouchableOpacity activeOpacity={0.8} onPress={openSheet} style={styles.waveContainer}>
-        <Wave />
-        <View style={styles.waveOverlay}>
-          <UpArrow />
-          <Text style={{ color: 'white', fontSize: 28, fontWeight: '800', marginTop: 4 }}>Sign Up</Text>
-        </View>
-      </TouchableOpacity>
-
-      <Animated.View
-        {...panResponder.panHandlers}
-        style={[styles.sheet, styles.sheetShadow, { transform: [{ translateY }] }]}
-      >
-        <LinearGradient
-          colors={[COLORS.indigo, COLORS.purple]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.sheetHeaderGradient}
-        >
-          <View style={styles.homeIndicator} />
-          <Text style={styles.sheetTitle}>Sign Up</Text>
-        </LinearGradient>
-
-        <View style={{ padding: 16 }}>
-          <View style={styles.card}>
+    <KeyboardAvoidingView behavior={Platform.select({ios: 'padding', android: undefined})} style={{flex: 1}}>
+      <LinearGradient colors={['#ffffff', '#f5f3ff']} start={{x: 0.1, y: 0}} end={{x: 1, y: 1}} style={styles.background}>
+        <View style={styles.headerGlow} />
+        <View style={styles.topContent}>
+          <CrossEmblem />
+          <View style={styles.titleBlock}>
+            <Text style={styles.appTitle}>CareAI</Text>
+            <Text style={styles.heading}>Welcome back</Text>
+            <Text style={styles.subtitle}>
+              Log in to get quick, AI-assisted guidance on your symptoms — with clear, safe next steps.
+            </Text>
+          </View>
+          <View style={styles.loginCard}>
             <TextInput
               mode="flat"
               keyboardType="email-address"
               autoCapitalize="none"
-              value={signupForm.getValues('email')}
-              onChangeText={(t) => signupForm.setValue('email', t, { shouldValidate: true })}
+              value={loginForm.getValues('email')}
+              onChangeText={t => loginForm.setValue('email', t, {shouldValidate: true})}
               placeholder="Email"
               style={styles.field}
-              underlineStyle={{ display: 'none' }}
+              underlineStyle={{display: 'none'}}
               placeholderTextColor={COLORS.grayPlaceholder}
-              error={!!signupForm.formState.errors.email}
+              error={!!loginForm.formState.errors.email}
               textColor={COLORS.purple}
               selectionColor={COLORS.purple}
               theme={inputTheme}
@@ -282,107 +204,150 @@ export default function LoginScreen({ navigation }: any) {
             <TextInput
               mode="flat"
               secureTextEntry
-              value={signupForm.getValues('password')}
-              onChangeText={(t) => signupForm.setValue('password', t, { shouldValidate: true })}
+              value={loginForm.getValues('password')}
+              onChangeText={t => loginForm.setValue('password', t, {shouldValidate: true})}
               placeholder="Password"
               style={styles.field}
-              underlineStyle={{ display: 'none' }}
+              underlineStyle={{display: 'none'}}
               placeholderTextColor={COLORS.grayPlaceholder}
-              error={!!signupForm.formState.errors.password}
+              error={!!loginForm.formState.errors.password}
               textColor={COLORS.purple}
               selectionColor={COLORS.purple}
               theme={inputTheme}
             />
-            <TextInput
-              mode="flat"
-              secureTextEntry
-              value={signupForm.getValues('confirm')}
-              onChangeText={(t) => signupForm.setValue('confirm', t, { shouldValidate: true })}
-              placeholder="Confirm Password"
-              style={styles.field}
-              underlineStyle={{ display: 'none' }}
-              placeholderTextColor={COLORS.grayPlaceholder}
-              error={!!signupForm.formState.errors.confirm}
-              textColor={COLORS.purple}
-              selectionColor={COLORS.purple}
-              theme={inputTheme}
-            />
-            <TextInput
-              mode="flat"
-              value={signupForm.getValues('dialCode')}
-              onChangeText={(t) => signupForm.setValue('dialCode', t, { shouldValidate: true })}
-              placeholder="+27"
-              style={styles.field}
-              underlineStyle={{ display: 'none' }}
-              placeholderTextColor={COLORS.grayPlaceholder}
-              right={<TextInput.Icon icon="chevron-down" />}
-              textColor={COLORS.purple}
-              selectionColor={COLORS.purple}
-              theme={inputTheme}
-            />
-
+            <View style={styles.forgotRow}>
+              <TouchableOpacity onPress={onForgot}>
+                <Text style={styles.forgotText}>Forgot Password?</Text>
+              </TouchableOpacity>
+            </View>
             <Button
               mode="contained"
-              loading={signingUp}
-              disabled={signingUp}
-              onPress={signupForm.handleSubmit(onSignup)}
-              style={styles.signupButton}
-              contentStyle={{ height: 56 }}
-              labelStyle={{ fontSize: 18, fontWeight: '800' }}
+              loading={loggingIn}
+              disabled={loggingIn}
+              onPress={loginForm.handleSubmit(onLogin)}
+              style={styles.loginButton}
+              contentStyle={{height: 56}}
+              labelStyle={{fontSize: 18, fontWeight: '800'}}
               buttonColor={COLORS.purple}
             >
-              Sign Up
+              Log In
             </Button>
           </View>
-
-          <View style={{ alignItems: 'center', marginTop: 14 }}>
-            <Text style={{ color: 'white' }}>Already have an account?</Text>
-            <TouchableOpacity onPress={closeSheet}>
-              <Text style={{ color: 'white', fontWeight: '700', marginTop: 4 }}>
-                Swipe down to Log In
-              </Text>
-            </TouchableOpacity>
-          </View>
         </View>
-      </Animated.View>
+
+        {!keyboardVisible && (
+          <>
+            <TouchableOpacity activeOpacity={0.8} onPress={openSheet} style={styles.waveContainer}>
+              <Wave />
+              <View style={styles.waveOverlay}>
+                <UpArrow />
+                <Text style={styles.waveTitle}>Sign Up</Text>
+              </View>
+            </TouchableOpacity>
+
+            <Animated.View
+              {...panResponder.panHandlers}
+              style={[styles.sheet, styles.sheetShadow, {transform: [{translateY}]}]}
+            >
+              <LinearGradient
+                colors={['#EEF2FF', '#E0EAFF']}
+                start={{x: 0, y: 0}}
+                end={{x: 1, y: 1}}
+                style={styles.sheetHeaderGradient}
+              >
+                <View style={styles.homeIndicator} />
+                <Text style={styles.sheetTitle}>Create your account</Text>
+                <Text style={styles.sheetSubtitle}>
+                  Sign up to start using CareAI for gentle, AI-assisted symptom checks.
+                </Text>
+              </LinearGradient>
+
+              <View style={{padding: 16}}>
+                <View style={styles.card}>
+                  <TextInput
+                    mode="flat"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    value={signupForm.getValues('email')}
+                    onChangeText={t => signupForm.setValue('email', t, {shouldValidate: true})}
+                    placeholder="Email"
+                    style={styles.field}
+                    underlineStyle={{display: 'none'}}
+                    placeholderTextColor={COLORS.grayPlaceholder}
+                    error={!!signupForm.formState.errors.email}
+                    textColor={COLORS.purple}
+                    selectionColor={COLORS.purple}
+                    theme={inputTheme}
+                  />
+                  <TextInput
+                    mode="flat"
+                    secureTextEntry
+                    value={signupForm.getValues('password')}
+                    onChangeText={t => signupForm.setValue('password', t, {shouldValidate: true})}
+                    placeholder="Password"
+                    style={styles.field}
+                    underlineStyle={{display: 'none'}}
+                    placeholderTextColor={COLORS.grayPlaceholder}
+                    error={!!signupForm.formState.errors.password}
+                    textColor={COLORS.purple}
+                    selectionColor={COLORS.purple}
+                    theme={inputTheme}
+                  />
+                  <TextInput
+                    mode="flat"
+                    secureTextEntry
+                    value={signupForm.getValues('confirm')}
+                    onChangeText={t => signupForm.setValue('confirm', t, {shouldValidate: true})}
+                    placeholder="Confirm Password"
+                    style={styles.field}
+                    underlineStyle={{display: 'none'}}
+                    placeholderTextColor={COLORS.grayPlaceholder}
+                    error={!!signupForm.formState.errors.confirm}
+                    textColor={COLORS.purple}
+                    selectionColor={COLORS.purple}
+                    theme={inputTheme}
+                  />
+                  <Button
+                    mode="contained"
+                    loading={signingUp}
+                    disabled={signingUp}
+                    onPress={signupForm.handleSubmit(onSignup)}
+                    style={styles.signupButton}
+                    contentStyle={{height: 56}}
+                    labelStyle={{fontSize: 18, fontWeight: '800'}}
+                    buttonColor={COLORS.purple}
+                  >
+                    Sign Up
+                  </Button>
+                </View>
+
+                <View style={{alignItems: 'center', marginTop: 10}}>
+                  <Text style={{color: '#E5E7EB'}}>Already have an account?</Text>
+                  <TouchableOpacity onPress={closeSheet}>
+                    <Text style={styles.sheetHint}>Swipe down to Log In</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Animated.View>
+          </>
+        )}
+      </LinearGradient>
     </KeyboardAvoidingView>
   );
 }
 
 function CrossEmblem() {
   return (
-    <View
-      style={{
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingTop: 6,
-        shadowColor: COLORS.purple,
-        shadowOpacity: 0.25,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 6 },
-      }}
-    >
-      <Image
-        source={require('../../assets/images/splash-static.png')}
-        style={{
-          width: 160,
-          height: 160,
-          resizeMode: 'contain',
-        }}
-      />
+    <View style={styles.emblemWrapper}>
+      <Image source={require('../../assets/images/splash-static.png')} style={styles.emblemImage} />
     </View>
   );
 }
 
 function Wave() {
   return (
-    <View style={{ flex: 1 }}>
-      <Svg
-        width="100%"
-        height="100%"
-        viewBox="0 0 375 200"
-        preserveAspectRatio="none"
-      >
+    <View style={{flex: 1}}>
+      <Svg width="100%" height="100%" viewBox="0 0 375 200" preserveAspectRatio="none">
         <Defs>
           <SvgLg id="waveGrad" x1="0" y1="0" x2="375" y2="0" gradientUnits="userSpaceOnUse">
             <Stop offset="0" stopColor="#4F46E5" />
@@ -415,17 +380,91 @@ function UpArrow() {
         borderLeftWidth: 3,
         borderTopWidth: 3,
         borderColor: 'white',
-        transform: [{ rotate: '45deg' }],
+        transform: [{rotate: '45deg'}],
       }}
     />
   );
 }
 
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+  },
+  headerGlow: {
+    position: 'absolute',
+    top: -90,
+    left: -30,
+    width: 220,
+    height: 220,
+    borderRadius: 130,
+    backgroundColor: COLORS.purple,
+    opacity: 0.13,
+    shadowColor: COLORS.purple,
+    shadowOpacity: 0.7,
+    shadowRadius: 40,
+    shadowOffset: {width: 0, height: 0},
+  },
+  topContent: {
+    flex: 1,
+    paddingTop: 60,
+    paddingHorizontal: 24,
+  },
+  emblemWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    shadowColor: COLORS.purple,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: {width: 0, height: 6},
+  },
+  emblemImage: {
+    width: 160,
+    height: 160,
+    resizeMode: 'contain',
+  },
+  titleBlock: {
+    marginTop: 4,
+    marginBottom: 18,
+  },
+  appTitle: {
+    color: COLORS.purple,
+    fontWeight: '700',
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  heading: {
+    color: COLORS.text,
+    fontSize: 28,
+    fontWeight: '800',
+  },
+  subtitle: {
+    color: 'rgba(17,24,39,0.7)',
+    fontSize: 14,
+    marginTop: 6,
+  },
+  loginCard: {
+    marginTop: 12,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderRadius: 20,
+    padding: 18,
+    shadowColor: COLORS.purple,
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    shadowOffset: {width: 0, height: 6},
+  },
   field: {
     backgroundColor: COLORS.grayField,
     borderRadius: 10,
     marginTop: 12,
+  },
+  forgotRow: {
+    alignItems: 'flex-end',
+    marginTop: 6,
+  },
+  forgotText: {
+    fontWeight: '700',
+    color: 'rgba(0,0,0,0.6)',
   },
   loginButton: {
     borderRadius: 16,
@@ -434,23 +473,28 @@ const styles = StyleSheet.create({
     shadowColor: COLORS.purple,
     shadowOpacity: 0.4,
     shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
   },
   waveContainer: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: 200,
+    height: 160,
   },
   waveOverlay: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 36,
+    bottom: 18,
     alignItems: 'center',
   },
-
+  waveTitle: {
+    color: 'white',
+    fontSize: 28,
+    fontWeight: '800',
+    marginTop: 4,
+  },
   sheet: {
     position: 'absolute',
     left: 0,
@@ -466,22 +510,26 @@ const styles = StyleSheet.create({
     shadowColor: COLORS.purple,
     shadowOpacity: 0.35,
     shadowRadius: 24,
-    shadowOffset: { width: 0, height: -4 },
+    shadowOffset: {width: 0, height: -4},
     elevation: 16,
   },
-
   sheetHeaderGradient: {
     paddingTop: 18,
-    paddingBottom: 22,
+    paddingBottom: 18,
     paddingHorizontal: 20,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
   },
   sheetTitle: {
-    color: 'white',
-    fontSize: 32,
+    color: COLORS.text,
+    fontSize: 22,
     fontWeight: '800',
-    marginTop: 8,
+    marginTop: 10,
+  },
+  sheetSubtitle: {
+    marginTop: 4,
+    color: 'rgba(15,23,42,0.7)',
+    fontSize: 13,
   },
   homeIndicator: {
     alignSelf: 'center',
@@ -491,7 +539,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.85)',
     opacity: 0.95,
   },
-
   card: {
     backgroundColor: 'rgba(255,255,255,0.12)',
     borderRadius: 20,
@@ -506,6 +553,11 @@ const styles = StyleSheet.create({
     shadowColor: COLORS.purple,
     shadowOpacity: 0.4,
     shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
+  },
+  sheetHint: {
+    color: 'white',
+    fontWeight: '700',
+    marginTop: 4,
   },
 });

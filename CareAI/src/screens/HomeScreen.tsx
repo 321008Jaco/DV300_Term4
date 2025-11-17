@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {View, ScrollView, StyleSheet, KeyboardAvoidingView, Platform} from 'react-native';
-import {Text, Chip, Card, TextInput, IconButton, Avatar, Button, ActivityIndicator} from 'react-native-paper';
+import {Text, TextInput, IconButton, ActivityIndicator} from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
+
 import AiReply from '../Component/AiReply';
 import { triageText, TriageAnswer } from '../services/triageService';
 import { saveHistory } from '../services/historyService';
@@ -49,18 +51,30 @@ export default function HomeScreen({ navigation }: any) {
 
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  useEffect(() => {
-    getWelcomeName().then(setWelcomeName).catch(() => setWelcomeName('there'));
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
 
-  useEffect(() => {
-    (async () => {
-      const u = getAuth().currentUser;
-      if (!u) return;
-      const seen = await getOnboardingSeen(u.uid);
-      if (!seen) setShowOnboarding(true);
-    })();
-  }, []);
+      getWelcomeName()
+        .then((name) => {
+          if (isActive) setWelcomeName(name || 'there');
+        })
+        .catch(() => {
+          if (isActive) setWelcomeName('there');
+        });
+
+      (async () => {
+        const u = getAuth().currentUser;
+        if (!u) return;
+        const seen = await getOnboardingSeen(u.uid);
+        if (isActive && !seen) setShowOnboarding(true);
+      })();
+
+      return () => {
+        isActive = false;
+      };
+    }, [])
+  );
 
   async function closeOnboarding() {
     const u = getAuth().currentUser;
@@ -146,7 +160,6 @@ export default function HomeScreen({ navigation }: any) {
       behavior={Platform.select({ ios: 'padding', android: undefined })}
     >
       <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.bg }} edges={['top']}>
-        {/* Busy overlay for clearer feedback */}
         {isBusy && (
           <View style={styles.loadingOverlay}>
             <ActivityIndicator size="large" />
@@ -284,42 +297,6 @@ const styles = StyleSheet.create({
   },
   greeting: { fontSize: 28, fontWeight: '800', color: COLORS.text },
   subtitle: { fontSize: 16, color: '#5b5b73', marginTop: 6 },
-  pills: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 18,
-  },
-  pill: {
-    borderColor: COLORS.purple,
-    borderWidth: 1,
-    backgroundColor: COLORS.white,
-    borderRadius: 18,
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  pillText: { color: COLORS.purple, fontSize: 12, fontWeight: '600' },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 26,
-  },
-  sectionTitle: { color: COLORS.text, fontSize: 16, fontWeight: '700' },
-  cardsRow: { paddingRight: 10, paddingTop: 10 },
-  card: {
-    width: 210,
-    marginRight: 12,
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    elevation: 6,
-    shadowColor: COLORS.purple,
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-  },
-  cardContent: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  cardIcon: { backgroundColor: COLORS.purple },
-  cardTitle: { color: COLORS.text, fontSize: 14, fontWeight: '600' },
 
   inputBar: {
     position: 'absolute',
