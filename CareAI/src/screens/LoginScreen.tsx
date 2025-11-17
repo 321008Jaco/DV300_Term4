@@ -89,6 +89,7 @@ export default function LoginScreen({navigation}: any) {
   const isOpenRef = useRef(false);
 
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   useEffect(() => {
     const id = translateY.addListener(({value}) => (currentY.current = value));
@@ -107,7 +108,9 @@ export default function LoginScreen({navigation}: any) {
   const clamp = (v: number) => Math.max(SHEET_OPEN_Y, Math.min(SHEET_CLOSED_Y, v));
 
   const openSheet = () => {
+    Keyboard.dismiss();
     isOpenRef.current = true;
+    setIsSheetOpen(true);
     Animated.spring(translateY, {
       toValue: SHEET_OPEN_Y,
       useNativeDriver: true,
@@ -117,6 +120,7 @@ export default function LoginScreen({navigation}: any) {
 
   const closeSheet = () => {
     isOpenRef.current = false;
+    setIsSheetOpen(false);
     Animated.spring(translateY, {
       toValue: SHEET_CLOSED_Y,
       useNativeDriver: true,
@@ -171,6 +175,8 @@ export default function LoginScreen({navigation}: any) {
       setSigningUp(false);
     }
   };
+
+  const showSlider = !keyboardVisible || isSheetOpen;
 
   return (
     <KeyboardAvoidingView behavior={Platform.select({ios: 'padding', android: undefined})} style={{flex: 1}}>
@@ -235,7 +241,7 @@ export default function LoginScreen({navigation}: any) {
           </View>
         </View>
 
-        {!keyboardVisible && (
+        {showSlider && (
           <>
             <TouchableOpacity activeOpacity={0.8} onPress={openSheet} style={styles.waveContainer}>
               <Wave />
