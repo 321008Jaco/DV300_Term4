@@ -12,8 +12,19 @@ const COLORS = {
   text: '#0B0B12',
   subtext: '#5b5b73',
   field: '#E5E5E5',
+  grayPlaceholder: '#6B6B6B',
   purple: '#8B5CF6',
 };
+
+const inputTheme = {
+  colors: {
+    primary: COLORS.purple,
+    onSurface: COLORS.purple,
+    surface: COLORS.field,
+    background: COLORS.field,
+    outline: 'transparent',
+  },
+} as const;
 
 export default function SettingsScreen() {
   const { logout } = useAuth();
@@ -38,14 +49,17 @@ export default function SettingsScreen() {
 
   const onSaveUsername = async () => {
     const u = getAuth().currentUser;
-    if (!u || !username.trim()) return;
+    const trimmed = username.trim();
+    if (!u || !trimmed) return;
     setSaving(true);
     try {
-      await setUsername(u.uid, username.trim());
+      await setUsername(u.uid, trimmed);
     } finally {
       setSaving(false);
     }
   };
+
+  const canSave = !!username.trim() && !saving;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -62,10 +76,16 @@ export default function SettingsScreen() {
             autoCapitalize="none"
             style={styles.input}
             underlineStyle={{ display: 'none' }}
+            placeholder="Enter a username"
+            placeholderTextColor={COLORS.grayPlaceholder}
+            textColor={COLORS.purple}        // ← visible purple text
+            selectionColor={COLORS.purple}   // ← purple cursor/selection
+            theme={inputTheme}
           />
           <PrimaryButton
             label={saving ? 'Saving…' : 'Save username'}
             onPress={onSaveUsername}
+            disabled={!canSave}
           />
         </View>
 
@@ -89,7 +109,10 @@ const styles = StyleSheet.create({
   divider: { marginVertical: 6, opacity: 0.5 },
   section: { gap: 8 },
   label: { color: COLORS.text, fontSize: 14, fontWeight: '700' },
-  input: { backgroundColor: COLORS.field, borderRadius: 10 },
+  input: {
+    backgroundColor: COLORS.field,
+    borderRadius: 10,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

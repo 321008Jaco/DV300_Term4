@@ -83,22 +83,28 @@ export default function HistoryScreen() {
             {item.prompt}
           </Text>
 
+          {/* TAGS ROW */}
           <View style={styles.row}>
-            <Chip style={[styles.chip, styles.primaryChip]} textStyle={styles.primaryChipText}>
+            <Chip
+              style={[styles.chip, styles.primaryChip]}
+              textStyle={styles.primaryChipText}
+            >
               {item.condition || 'Unclear cause'}
             </Chip>
 
-            <Chip style={[styles.chip, styles.levelChip]} textStyle={styles.levelText}>
-              <Text numberOfLines={1} style={styles.levelInner}>
-                {item.level}
-              </Text>
+            <Chip
+              style={[styles.chip, styles.levelChip]}
+              textStyle={styles.levelText}
+            >
+              {item.level}
             </Chip>
 
             {item.dangerous ? (
-              <Chip style={[styles.chip, styles.danger]} textStyle={styles.dangerText}>
-                <Text numberOfLines={1} style={styles.dangerInner}>
-                  urgent
-                </Text>
+              <Chip
+                style={[styles.chip, styles.danger]}
+                textStyle={styles.dangerText}
+              >
+                urgent
               </Chip>
             ) : null}
           </View>
@@ -166,25 +172,28 @@ const styles = StyleSheet.create({
 
   prompt: { color: COLORS.text, fontSize: 15, fontWeight: '700', paddingRight: 28 },
 
-  row: { flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' },
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 10,
+  },
 
   chip: {
     borderRadius: 18,
-    height: 32,
+    minHeight: 32,
     justifyContent: 'center',
-    maxWidth: '60%',
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
+    flexShrink: 0,
   },
   primaryChip: { backgroundColor: COLORS.chipBg },
   primaryChipText: { color: COLORS.purple, fontWeight: '700' },
 
   levelChip: { backgroundColor: COLORS.levelBg },
   levelText: { color: COLORS.indigo, fontWeight: '700' },
-  levelInner: { color: COLORS.indigo, fontWeight: '700' },
 
   danger: { backgroundColor: COLORS.dangerBg },
   dangerText: { color: COLORS.dangerText, fontWeight: '700' },
-  dangerInner: { color: COLORS.dangerText, fontWeight: '700' },
 
   advice: { color: COLORS.text, marginTop: 10, lineHeight: 20 },
   time: { color: COLORS.subtext, marginTop: 8, fontSize: 12 },

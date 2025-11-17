@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Chip, Card, TextInput, IconButton, Avatar, Button, ActivityIndicator } from 'react-native-paper';
+import {View, ScrollView, StyleSheet, KeyboardAvoidingView, Platform} from 'react-native';
+import {Text, Chip, Card, TextInput, IconButton, Avatar, Button, ActivityIndicator} from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AiReply from '../Component/AiReply';
@@ -42,6 +42,7 @@ export default function HomeScreen({ navigation }: any) {
   const [reply, setReply] = useState<TriageAnswer | null>(null);
   const [sending, setSending] = useState(false);
   const [welcomeName, setWelcomeName] = useState('there');
+  const [lastPrompt, setLastPrompt] = useState<string | null>(null);
 
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
@@ -68,13 +69,15 @@ export default function HomeScreen({ navigation }: any) {
   }
 
   async function sendPrompt(prompt: string) {
-    if (!prompt.trim()) return;
+    const trimmed = prompt.trim();
+    if (!trimmed) return;
+    setLastPrompt(trimmed);
     setSending(true);
     try {
-      const res = await triageText(prompt.trim());
+      const res = await triageText(trimmed);
       setReply(res);
       await saveHistory({
-        prompt: prompt.trim(),
+        prompt: trimmed,
         condition: res.condition,
         level: res.level,
         dangerous: !!res.dangerous,
@@ -95,6 +98,7 @@ export default function HomeScreen({ navigation }: any) {
   const onSend = async () => {
     if (sending || recording || transcribing) return;
     const prompt = message.trim();
+    if (!prompt) return;
     setMessage('');
     await sendPrompt(prompt);
   };
@@ -111,7 +115,11 @@ export default function HomeScreen({ navigation }: any) {
       try {
         setTranscribing(true);
         const text = await stopAndTranscribe();
-        await sendPrompt(text);
+        const trimmed = text?.trim?.() ?? '';
+        if (trimmed) {
+          setLastPrompt(trimmed);
+          await sendPrompt(trimmed);
+        }
       } catch (e: any) {
         console.log('voice error', e?.message || e);
       } finally {
@@ -122,7 +130,9 @@ export default function HomeScreen({ navigation }: any) {
   };
 
   const onCancelPress = async () => {
-    try { await stopAndTranscribe(); } catch {}
+    try {
+      await stopAndTranscribe();
+    } catch {}
     setRecording(false);
     setTranscribing(false);
   };
@@ -131,105 +141,133 @@ export default function HomeScreen({ navigation }: any) {
   const showListeningUI = recording || transcribing;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.bg }} edges={['top']}>
-      <LinearGradient
-        colors={['#ffffff', '#f5f3ff']}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerGrad}
-      />
-      <View style={styles.headerGlow} />
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.select({ ios: 'padding', android: undefined })}
+    >
+      <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.bg }} edges={['top']}>
+        {/* Busy overlay for clearer feedback */}
+        {isBusy && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" />
+            <Text style={styles.loadingText}>
+              {transcribing ? 'Transcribing your voice…' : 'Analyzing your symptoms…'}
+            </Text>
+          </View>
+        )}
 
-      <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: 140 + insets.bottom },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.greeting}>Welcome, {welcomeName}!</Text>
-        <Text style={styles.subtitle}>How can we help you today?</Text>
+        <LinearGradient
+          colors={['#ffffff', '#f5f3ff']}
+          start={{ x: 0.2, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerGrad}
+        />
+        <View style={styles.headerGlow} />
 
-        {reply ? <AiReply data={reply} /> : null}
-      </ScrollView>
+        <ScrollView
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: 140 + insets.bottom },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.greeting}>Welcome, {welcomeName}!</Text>
+          <Text style={styles.subtitle}>How can we help you today?</Text>
 
-      <View
-        style={[
-          styles.inputBar,
-          {
-            bottom: 16 + insets.bottom,
-          },
-          showListeningUI && { backgroundColor: COLORS.redLight, borderColor: COLORS.red, borderWidth: 1 },
-        ]}
-      >
-        <View style={{ flex: 1 }}>
-          {showListeningUI ? (
-            <View style={styles.listeningRow}>
-              <View style={styles.dot} />
-              <Text style={styles.listeningText}>
-                {transcribing ? 'Transcribing…' : 'Listening…'}
-              </Text>
-              {transcribing ? <ActivityIndicator style={{ marginLeft: 8 }} color={COLORS.red} /> : null}
-            </View>
-          ) : (
-            <TextInput
-              value={message}
-              onChangeText={setMessage}
-              placeholder="Type your symptoms…"
-              mode="flat"
-              style={styles.input}
-              underlineStyle={{ display: 'none' }}
-              placeholderTextColor={COLORS.grayPlaceholder}
-              textColor={COLORS.purple}
-              selectionColor={COLORS.purple}
-              theme={inputTheme}
-              onSubmitEditing={onSend}
-              returnKeyType="send"
-              editable={!isBusy}
+          {reply ? <AiReply data={reply} prompt={lastPrompt ?? ''} /> : null}
+        </ScrollView>
+
+        <View
+          style={[
+            styles.inputBar,
+            {
+              bottom: 16 + insets.bottom,
+            },
+            showListeningUI && {
+              backgroundColor: COLORS.redLight,
+              borderColor: COLORS.red,
+              borderWidth: 1,
+            },
+          ]}
+        >
+          <View style={{ flex: 1 }}>
+            {showListeningUI ? (
+              <View style={styles.listeningRow}>
+                <View style={styles.dot} />
+                <Text style={styles.listeningText}>
+                  {transcribing ? 'Transcribing…' : 'Listening…'}
+                </Text>
+                {transcribing ? (
+                  <ActivityIndicator style={{ marginLeft: 8 }} color={COLORS.red} />
+                ) : null}
+              </View>
+            ) : (
+              <TextInput
+                value={message}
+                onChangeText={setMessage}
+                placeholder="Type your symptoms…"
+                mode="flat"
+                style={styles.input}
+                underlineStyle={{ display: 'none' }}
+                placeholderTextColor={COLORS.grayPlaceholder}
+                textColor={COLORS.purple}
+                selectionColor={COLORS.purple}
+                theme={inputTheme}
+                onSubmitEditing={onSend}
+                returnKeyType="send"
+                editable={!isBusy}
+              />
+            )}
+          </View>
+
+          {recording && !transcribing ? (
+            <IconButton
+              icon="close"
+              size={22}
+              onPress={onCancelPress}
+              style={styles.icon}
+              containerColor="transparent"
+              iconColor={COLORS.red}
             />
-          )}
+          ) : null}
+
+          <IconButton
+            icon={recording ? 'stop' : 'microphone'}
+            size={22}
+            onPress={onMicPress}
+            disabled={isBusy}
+            style={[styles.icon, recording && { backgroundColor: COLORS.red }]}
+            containerColor={recording ? COLORS.red : 'transparent'}
+            iconColor={recording ? COLORS.white : COLORS.purple}
+          />
+
+          <IconButton
+            icon={isBusy ? 'loading' : 'send'}
+            size={22}
+            onPress={onSend}
+            disabled={isBusy || recording || !message.trim()}
+            style={styles.sendBtn}
+            containerColor={COLORS.purple}
+            iconColor={COLORS.white}
+          />
         </View>
 
-        {recording && !transcribing ? (
-          <IconButton
-            icon="close"
-            size={22}
-            onPress={onCancelPress}
-            style={styles.icon}
-            containerColor="transparent"
-            iconColor={COLORS.red}
-          />
-        ) : null}
-
-        <IconButton
-          icon={recording ? 'stop' : 'microphone'}
-          size={22}
-          onPress={onMicPress}
-          disabled={isBusy}
-          style={[styles.icon, recording && { backgroundColor: COLORS.red }]}
-          containerColor={recording ? COLORS.red : 'transparent'}
-          iconColor={recording ? COLORS.white : COLORS.purple}
-        />
-
-        <IconButton
-          icon={isBusy ? 'loading' : 'send'}
-          size={22}
-          onPress={onSend}
-          disabled={isBusy || recording || !message.trim()}
-          style={styles.sendBtn}
-          containerColor={COLORS.purple}
-          iconColor={COLORS.white}
-        />
-      </View>
-
-      <OnboardingModal visible={showOnboarding} onClose={closeOnboarding} />
-    </SafeAreaView>
+        <OnboardingModal visible={showOnboarding} onClose={closeOnboarding} />
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   content: { paddingTop: 48, paddingHorizontal: 20 },
-  headerGrad: { position: 'absolute', left: -60, right: -60, top: -120, height: 260, borderRadius: 260 },
+  headerGrad: {
+    position: 'absolute',
+    left: -60,
+    right: -60,
+    top: -120,
+    height: 260,
+    borderRadius: 260,
+  },
   headerGlow: {
     position: 'absolute',
     top: -90,
@@ -246,10 +284,26 @@ const styles = StyleSheet.create({
   },
   greeting: { fontSize: 28, fontWeight: '800', color: COLORS.text },
   subtitle: { fontSize: 16, color: '#5b5b73', marginTop: 6 },
-  pills: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 18 },
-  pill: { borderColor: COLORS.purple, borderWidth: 1, backgroundColor: COLORS.white, borderRadius: 18, marginRight: 8, marginBottom: 8 },
+  pills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 18,
+  },
+  pill: {
+    borderColor: COLORS.purple,
+    borderWidth: 1,
+    backgroundColor: COLORS.white,
+    borderRadius: 18,
+    marginRight: 8,
+    marginBottom: 8,
+  },
   pillText: { color: COLORS.purple, fontSize: 12, fontWeight: '600' },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 26 },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 26,
+  },
   sectionTitle: { color: COLORS.text, fontSize: 16, fontWeight: '700' },
   cardsRow: { paddingRight: 10, paddingTop: 10 },
   card: {
@@ -300,4 +354,21 @@ const styles = StyleSheet.create({
   },
   listeningText: { color: COLORS.red, fontWeight: '600' },
   dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.red, marginRight: 10 },
+
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 18, 36, 0.18)',
+    zIndex: 20,
+  },
+  loadingText: {
+    marginTop: 8,
+    color: COLORS.text,
+    fontSize: 14,
+  },
 });
